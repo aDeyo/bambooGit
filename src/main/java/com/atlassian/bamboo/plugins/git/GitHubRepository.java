@@ -384,12 +384,6 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
     }
 
     @Override
-    public String getBranchIntegrationEditHtml()
-    {
-        return gitRepository.getBranchIntegrationEditHtml();
-    }
-
-    @Override
     public void pushRevision(@NotNull final File file, @Nullable final String s) throws RepositoryException
     {
         gitRepository.pushRevision(file, s);
