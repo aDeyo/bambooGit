@@ -32,12 +32,13 @@ public class UriUtils
 
     public static boolean isSsh(@NotNull ScpAwareUri repositoryUri)
     {
-        return repositoryUri.getScheme().equals(SSH_SCHEME);
+        String scheme = repositoryUri.getScheme();
+        return scheme == null || scheme.equals(SSH_SCHEME);
     }
 
     public static boolean isSsh(@NotNull final String repositoryUrl)
     {
-        return repositoryUrl.startsWith(SSH_SCHEME + SCHEME_DELIMITER);
+        return repositoryUrl.startsWith(SSH_SCHEME + SCHEME_DELIMITER) || !repositoryUrl.contains(SCHEME_DELIMITER);
     }
 
     public static boolean hasScpSyntax(@NotNull String s)

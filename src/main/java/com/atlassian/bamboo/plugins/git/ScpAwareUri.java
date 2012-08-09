@@ -1,6 +1,7 @@
 package com.atlassian.bamboo.plugins.git;
 
 import org.apache.commons.lang.StringUtils;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 
@@ -41,6 +42,7 @@ public class ScpAwareUri
         return delegate.getRawPath();
     }
 
+    @Nullable
     public String getScheme()
     {
         return delegate.getScheme();
