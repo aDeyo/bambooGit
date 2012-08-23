@@ -244,6 +244,13 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
         return errorCollection;
     }
 
+    @Override
+    @NotNull
+    public BuildRepositoryChanges collectChangesForRevision(@NotNull String planKey, @NotNull String targetRevision) throws RepositoryException
+    {
+        return gitRepository.collectChangesSinceLastBuild(planKey, targetRevision);
+    }
+
     @NotNull
     public BuildRepositoryChanges collectChangesSinceLastBuild(@NotNull String planKey, @Nullable String lastVcsRevisionKey) throws RepositoryException
     {
