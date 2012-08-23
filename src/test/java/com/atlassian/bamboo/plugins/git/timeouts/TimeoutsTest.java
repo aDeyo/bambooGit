@@ -95,11 +95,11 @@ public class TimeoutsTest extends GitAbstractTest
     public void testTimeoutIsSufficientToCheckOutBigRepo() throws Exception
     {
         GitOperationHelper helper = createJGitOperationHelper(createAccessData("git://git.jetbrains.org/idea/community.git"));
-        String s = helper.obtainLatestRevision();
+        String targetRevision = helper.obtainLatestRevision();
         File directory = createTempDirectory();
         System.out.println(directory);
-        helper.fetch(directory, false);
-        helper.checkout(null, directory, s, null);
+        helper.fetch(directory, targetRevision, false);
+        helper.checkout(null, directory, targetRevision, null);
     }
 
     @DataProvider
@@ -123,7 +123,7 @@ public class TimeoutsTest extends GitAbstractTest
     {
         File directory = createTempDirectory();
         String targetRevision = createJGitOperationHelper(createAccessData(url)).obtainLatestRevision();
-        createJGitOperationHelper(createAccessData(url)).fetch(directory, false);
+        createJGitOperationHelper(createAccessData(url)).fetch(directory, targetRevision, false);
         createJGitOperationHelper(createAccessData(url)).checkout(null, directory, targetRevision, null);
     }
 

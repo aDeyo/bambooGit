@@ -41,13 +41,14 @@ public class ObjectCacheGithubTest extends GitAbstractTest
     {
         File cacheDir = createTempDirectory();
         GitOperationHelper helperForCache = createJGitOperationHelper(createAccessData(cacheUrl));
-        helperForCache.fetch(cacheDir, shallow);
+        String targetRevision = helperForCache.obtainLatestRevision();
+        helperForCache.fetch(cacheDir, targetRevision, shallow);
 
         File targetDir = createTempDirectory();
 
         GitOperationHelper helper = createJGitOperationHelper(createAccessData(url));
-        String targetRevision = helper.obtainLatestRevision();
-        helper.fetch(cacheDir, false);
+        targetRevision = helper.obtainLatestRevision();
+        helper.fetch(cacheDir, targetRevision, false);
         helper.checkout(cacheDir, targetDir, targetRevision, null);
 
         verifyContents(targetDir, "shallow-clones/5-contents.zip");
@@ -65,7 +66,7 @@ public class ObjectCacheGithubTest extends GitAbstractTest
 
         String targetRevision = helper3.obtainLatestRevision();
         String previousRevision = null;
-        helper3.fetch(cacheDir, true);
+        helper3.fetch(cacheDir, targetRevision, true);
         helper3.checkout(cacheDir, targetDir, targetRevision, previousRevision);
         verifyContents(targetDir, "shallow-clones/3-contents.zip");
 
@@ -76,7 +77,7 @@ public class ObjectCacheGithubTest extends GitAbstractTest
         targetRevision = helper5.obtainLatestRevision();
         previousRevision = helper5.getCurrentRevision(targetDir);
 
-        helper5.fetch(cacheDir, true);
+        helper5.fetch(cacheDir, targetRevision, true);
 
         helper5.checkout(cacheDir, targetDir, targetRevision, previousRevision);
         verifyContents(targetDir, "shallow-clones/5-contents.zip");
@@ -86,7 +87,7 @@ public class ObjectCacheGithubTest extends GitAbstractTest
 
         File targetDir2 = createTempDirectory();
         String targetRevision2 = helper3.obtainLatestRevision();
-        helper3.fetch(targetDir2, true);
+        helper3.fetch(targetDir2, targetRevision2, true);
         helper3.checkout(cacheDir, targetDir2, targetRevision2, null);
         verifyContents(targetDir2, "shallow-clones/3-contents.zip");
 
@@ -95,7 +96,7 @@ public class ObjectCacheGithubTest extends GitAbstractTest
 
         File targetDir3 = createTempDirectory();
         String targetRevision3 = helper5.obtainLatestRevision();
-        helper5.fetch(targetDir3, true);
+        helper5.fetch(targetDir3, targetRevision3, true);
 
         helper5.checkout(cacheDir, targetDir3, targetRevision3, null);
         verifyContents(targetDir3, "shallow-clones/5-contents.zip");
@@ -109,7 +110,7 @@ public class ObjectCacheGithubTest extends GitAbstractTest
         File targetDir = createTempDirectory();
 
         String targetRevision = createJGitOperationHelper(createAccessData("https://github.com/pstefaniak/3.git")).obtainLatestRevision();
-        createJGitOperationHelper(createAccessData("https://github.com/pstefaniak/3.git")).fetch(cacheDir, false);
+        createJGitOperationHelper(createAccessData("https://github.com/pstefaniak/3.git")).fetch(cacheDir, targetRevision, false);
         createJGitOperationHelper(createAccessData("https://github.com/pstefaniak/3.git")).checkout(cacheDir, targetDir, targetRevision, null);
         verifyContents(targetDir, "shallow-clones/3-contents.zip");
 
@@ -135,7 +136,7 @@ public class ObjectCacheGithubTest extends GitAbstractTest
 
         File targetDir = createTempDirectory();
         String targetRevision = createJGitOperationHelper(createAccessData(url)).obtainLatestRevision();
-        createJGitOperationHelper(createAccessData(url)).fetch(targetDir, false);
+        createJGitOperationHelper(createAccessData(url)).fetch(targetDir, targetRevision, false);
         createJGitOperationHelper(createAccessData(url)).checkout(null, targetDir, targetRevision, null);
 
         verifyContents(targetDir, "shallow-clones/5-contents.zip");

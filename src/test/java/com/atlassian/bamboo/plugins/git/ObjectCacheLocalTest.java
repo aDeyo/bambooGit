@@ -43,7 +43,7 @@ public class ObjectCacheLocalTest extends GitAbstractTest
         File targetDir = t.createDir("target");
 
         GitOperationHelper goh = createJGitOperationHelper(t.accessData);
-        goh.fetch(targetDir, false);
+        goh.fetch(targetDir, "HEAD", false);
         goh.checkout(null, targetDir, t.lastRevision, null);
 
         String contents = FileUtils.readFileToString(new File(targetDir, "file.txt"));
@@ -62,7 +62,7 @@ public class ObjectCacheLocalTest extends GitAbstractTest
         File emptyCache = new File(createTempDirectory(), "not_created");
 
         GitOperationHelper goh = createJGitOperationHelper(t.accessData);
-        goh.fetch(targetDir, false);
+        goh.fetch(targetDir, "HEAD", false);
         goh.checkout(emptyCache, targetDir, t.lastRevision, null);
 
         String contents = FileUtils.readFileToString(new File(targetDir, "file.txt"));
@@ -81,7 +81,7 @@ public class ObjectCacheLocalTest extends GitAbstractTest
         File targetDir = t.createDir("target");
 
         GitOperationHelper goh = createJGitOperationHelper(t.accessData);
-        goh.fetch(targetDir, false);
+        goh.fetch(targetDir, "HEAD", false);
         goh.checkout(t.cacheDir, targetDir, asyncRev, null);
 
         String contents = FileUtils.readFileToString(new File(targetDir, "file.txt"));
@@ -123,7 +123,7 @@ public class ObjectCacheLocalTest extends GitAbstractTest
             accessData = createAccessData(sourceRepositoryDir.getAbsolutePath());
 
             GitOperationHelper goh = createJGitOperationHelper(accessData);
-            goh.fetch(cacheDir, false);
+            goh.fetch(cacheDir, "HEAD", false);
             return this;
         }
 

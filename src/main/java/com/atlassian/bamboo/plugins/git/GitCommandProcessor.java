@@ -389,7 +389,15 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
 
     public Pair<List<CommitContext>, Integer> runLogCommand(final File cacheDirectory, final String lastVcsRevisionKey, final String targetRevision, @NotNull final Set<String> shallows, final int maxCommits) throws RepositoryException
     {
-        GitCommandBuilder commandBuilder = createCommandBuilder("log", "-p", "--name-only", "--format=" + CommitOutputHandler.LOG_COMMAND_FORMAT_STRING, lastVcsRevisionKey + ".." + targetRevision);
+        GitCommandBuilder commandBuilder = createCommandBuilder("log", "-p", "--name-only", "--format=" + CommitOutputHandler.LOG_COMMAND_FORMAT_STRING);
+        if (lastVcsRevisionKey.equals(targetRevision))
+        {
+            commandBuilder.append(targetRevision).append("-1");
+        }
+        else
+        {
+            commandBuilder.append(lastVcsRevisionKey + ".." + targetRevision);
+        }
         log.info("from revision: [" + lastVcsRevisionKey + "]; to revision: [" + targetRevision + "]");
         final CommitOutputHandler coh = new CommitOutputHandler(shallows, maxCommits);
         runCommand(commandBuilder, cacheDirectory, coh);
