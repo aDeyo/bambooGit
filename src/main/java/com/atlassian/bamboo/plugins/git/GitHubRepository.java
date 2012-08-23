@@ -248,7 +248,7 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
     @NotNull
     public BuildRepositoryChanges collectChangesForRevision(@NotNull String planKey, @NotNull String targetRevision) throws RepositoryException
     {
-        return gitRepository.collectChangesSinceLastBuild(planKey, targetRevision);
+        return gitRepository.collectChangesForRevision(planKey, targetRevision);
     }
 
     @NotNull
