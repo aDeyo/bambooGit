@@ -2,7 +2,6 @@ package com.atlassian.bamboo.plugins.git;
 
 import com.atlassian.bamboo.build.fileserver.BuildDirectoryManager;
 import com.atlassian.bamboo.commit.CommitContext;
-import com.atlassian.bamboo.plan.branch.BranchIntegrationHelper;
 import com.atlassian.bamboo.plan.branch.BranchIntegrationService;
 import com.atlassian.bamboo.repository.NameValuePair;
 import com.atlassian.bamboo.repository.RepositoryException;
@@ -265,7 +264,7 @@ public class GitRepositoryTest extends GitAbstractTest
     {
         final String author = COMITTER_NAME + " <" + COMITTER_EMAIL + ">";
         final String filename = "sparta.txt";
-        final String commitMessage = "Message\n";
+        final String commitMessage = "Message";
 
         File testRepository = createTempDirectory();
         ZipResourceDirectory.copyZipResourceToDirectory("basic-repository.zip", testRepository);
@@ -297,7 +296,7 @@ public class GitRepositoryTest extends GitAbstractTest
     {
         final String author = COMITTER_NAME + " <" + COMITTER_EMAIL + ">";
         final String filename = "sparta.txt";
-        final String commitMessage = "Message\n";
+        final String commitMessage = "Message";
 
         File testRepository = createTempDirectory();
         ZipResourceDirectory.copyZipResourceToDirectory("basic-repository.zip", testRepository);

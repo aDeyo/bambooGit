@@ -29,7 +29,7 @@ public class CommitOutputHandler extends LineOutputHandler implements GitCommand
     private static final String COMMIT_MESSAGE = SALT + "commit_message]";
     private static final String FILE_LIST = SALT + "file_list]";
 
-    public static final String LOG_COMMAND_FORMAT_STRING = HASH+"%H%n"+COMMITER_NAME+"%cN%n"+COMMITER_EMAIL+"%ce%n"+TIMESTAMP+"%ct%n"+COMMIT_MESSAGE+"%B%n"+FILE_LIST;
+    public static final String LOG_COMMAND_FORMAT_STRING = HASH+"%H%n"+COMMITER_NAME+"%cN%n"+COMMITER_EMAIL+"%ce%n"+TIMESTAMP+"%ct%n"+COMMIT_MESSAGE+"%s%n%b"+FILE_LIST;
 
     private enum CommitParserState
     {
