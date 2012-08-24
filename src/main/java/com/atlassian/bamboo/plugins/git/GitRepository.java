@@ -390,7 +390,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     public List<VcsBranch> getOpenBranches(@Nullable final String context) throws RepositoryException
     {
         final GitRepositoryAccessData substitutedAccessData = getSubstitutedAccessData();
-        final JGitOperationHelper helper = new JGitOperationHelper(substitutedAccessData, new NullBuildLogger(), i18nResolver);
+        final GitOperationHelper helper = GitOperationHelperFactory.createGitOperationHelper(this, substitutedAccessData, sshProxyService, new NullBuildLogger(), i18nResolver);
         return helper.getOpenBranches(substitutedAccessData, getWorkingDirectory());
     }
 
