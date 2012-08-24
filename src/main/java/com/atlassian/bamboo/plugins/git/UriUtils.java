@@ -1,9 +1,11 @@
 package com.atlassian.bamboo.plugins.git;
 
+
 import org.eclipse.jgit.transport.URIish;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -33,12 +35,12 @@ public class UriUtils
     public static boolean isSsh(@NotNull ScpAwareUri repositoryUri)
     {
         String scheme = repositoryUri.getScheme();
-        return scheme == null || scheme.equals(SSH_SCHEME);
+        return (scheme == null && repositoryUri.getAbsolutePath() == null) || scheme.equals(SSH_SCHEME);
     }
 
     public static boolean isSsh(@NotNull final String repositoryUrl)
     {
-        return repositoryUrl.startsWith(SSH_SCHEME + SCHEME_DELIMITER) || !repositoryUrl.contains(SCHEME_DELIMITER);
+        return repositoryUrl.startsWith(SSH_SCHEME + SCHEME_DELIMITER) || (!repositoryUrl.contains(SCHEME_DELIMITER) && !(new File(repositoryUrl).exists()));
     }
 
     public static boolean hasScpSyntax(@NotNull String s)
