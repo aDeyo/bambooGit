@@ -3,6 +3,7 @@ package com.atlassian.bamboo.plugins.git;
 import com.atlassian.bamboo.build.fileserver.BuildDirectoryManager;
 import com.atlassian.bamboo.commit.CommitContext;
 import com.atlassian.bamboo.plan.branch.BranchIntegrationService;
+import com.atlassian.bamboo.repository.InvalidRepositoryException;
 import com.atlassian.bamboo.repository.NameValuePair;
 import com.atlassian.bamboo.repository.RepositoryException;
 import com.atlassian.bamboo.v2.build.BuildRepositoryChanges;
@@ -20,6 +21,7 @@ import java.util.List;
 
 import static com.atlassian.bamboo.spring.SpringTestHelper.mockSpringComponent;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -325,5 +327,34 @@ public class GitRepositoryTest extends GitAbstractTest
         assertEquals(commit.getAuthor().getEmail(), COMITTER_EMAIL);
         assertEquals(commit.getComment(), commitMessage);
         assertEquals(commit.getFiles().get(0).getName(), filename);
+    }
+
+    @Test
+    public void testLastCommitOnNonExistentBranchWillThrowIrsException() throws Exception
+    {
+        File testRepository = createTempDirectory();
+        ZipResourceDirectory.copyZipResourceToDirectory("basic-repository.zip", testRepository);
+
+        GitRepository gitRepository = createNativeGitRepository();
+        setRepositoryProperties(gitRepository, testRepository, "master");
+
+        CommitContext commitContext = gitRepository.getLastCommit();
+        assertNotNull(commitContext);
+        assertEquals(commitContext.getComment(), "haku haku commit");
+        assertEquals(commitContext.getFiles().size(), 0);
+        assertEquals(commitContext.getAuthor().getName(), "Piotr Stefaniak <pstefaniak@atlassian.com>");
+
+        setRepositoryProperties(gitRepository, testRepository, "non-existent-branch");
+
+        boolean invalidRepositoryException = false;
+        try
+        {
+            gitRepository.getLastCommit();
+        }
+        catch (InvalidRepositoryException e)
+        {
+            invalidRepositoryException = true; // good, that's expected and that's what this test actually is testing
+        }
+        assertTrue(invalidRepositoryException, "Expected git repository to throw InvalidRepositoryException when trying to get last commit on non existent branch");
     }
 }
