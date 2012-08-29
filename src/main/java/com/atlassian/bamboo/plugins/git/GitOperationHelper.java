@@ -26,7 +26,7 @@ public interface GitOperationHelper
                     @NotNull String targetRevision,
                     @Nullable String previousRevision) throws RepositoryException;
 
-    void fetch(@NotNull File sourceDirectory, boolean useShallow) throws RepositoryException;
+    void fetch(@NotNull File sourceDirectory, @NotNull String targetRevision, boolean useShallow) throws RepositoryException;
 
     @NotNull
     String getCurrentRevision(@NotNull File sourceDirectory) throws RepositoryException;

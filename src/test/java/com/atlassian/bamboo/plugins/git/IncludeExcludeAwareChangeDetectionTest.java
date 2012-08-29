@@ -5,12 +5,9 @@ import com.atlassian.bamboo.build.logger.NullBuildLogger;
 import com.atlassian.bamboo.chains.BuildContextFactory;
 import com.atlassian.bamboo.plan.PlanKeys;
 import com.atlassian.bamboo.plan.branch.BranchCommitInformationManager;
-import com.atlassian.bamboo.plan.branch.BranchDetectionService;
-import com.atlassian.bamboo.plan.branch.BranchIntegrationHelper;
 import com.atlassian.bamboo.plan.branch.BranchIntegrationService;
 import com.atlassian.bamboo.plan.cache.ImmutableChain;
 import com.atlassian.bamboo.plan.cache.ImmutablePlan;
-import com.atlassian.bamboo.plan.cache.ImmutablePlanCacheService;
 import com.atlassian.bamboo.plan.vcsRevision.PlanVcsRevisionData;
 import com.atlassian.bamboo.plan.vcsRevision.PlanVcsRevisionHistoryService;
 import com.atlassian.bamboo.repository.IncludeExcludeAwareRepository;
@@ -123,7 +120,7 @@ public class IncludeExcludeAwareChangeDetectionTest extends GitAbstractTest
             Mockito.when(plan.getKey()).thenReturn(PLAN_KEY.getKey());
             Mockito.when(plan.getPlanKey()).thenReturn(PlanKeys.getPlanKey(PLAN_KEY.getKey()));
             Mockito.when(plan.hasMaster()).thenReturn(true); //to not step into branch detection in ChangeDetectionManagerImpl
-            BuildRepositoryChanges changes = changeDetectionManager.collectChangesSinceLastBuild(plan, repositoryDefinition, new PlanVcsRevisionData(previousVcsRevisionKey, null), null);
+            BuildRepositoryChanges changes = changeDetectionManager.collectChangesSinceLastBuild(plan, repositoryDefinition, new PlanVcsRevisionData(previousVcsRevisionKey, null), null, null);
             Assert.assertEquals(!changes.getChanges().isEmpty(), shouldTrigger, "Build should " + (shouldTrigger ? "" : "not ") + "trigger for " + option + " pattern '" + pattern + "' and files " + filesToTouch);
             previousVcsRevisionKey = newRevision;
         }

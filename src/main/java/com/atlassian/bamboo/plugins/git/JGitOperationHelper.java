@@ -283,14 +283,9 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
     }
 
     @Override
-    public void fetch(@NotNull final File sourceDirectory, boolean useShallow) throws RepositoryException
+    public void fetch(@NotNull final File sourceDirectory, @NotNull final String targetRevision, final boolean useShallow) throws RepositoryException
     {
-        fetch(sourceDirectory, accessData.branch, useShallow);
-    }
-
-    private void fetch(@NotNull final File sourceDirectory, final String branch, final boolean useShallow) throws RepositoryException
-    {
-        final AtomicReference<String> branchDescription = new AtomicReference<String>("(unresolved) " + branch);
+        final AtomicReference<String> refSpecDescription = new AtomicReference<String>("(unresolved) " + targetRevision);
         try
         {
             final FileRepository localRepository = createLocalRepository(sourceDirectory, null);
@@ -301,15 +296,14 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
                     @Override
                     public Void doWithTransport(@NotNull Transport transport) throws Exception
                     {
-                        final String resolvedBranch = getRefSpecForName(transport, branch);
-                        branchDescription.set(resolvedBranch);
+                        final String resolvedRefSpec = getRefSpecForName(transport, targetRevision);
+                        refSpecDescription.set(resolvedRefSpec);
 
-                        buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.fetchingBranch", resolvedBranch, accessData.repositoryUrl)
+                        buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.fetching", resolvedRefSpec, accessData.repositoryUrl)
                                                      + (useShallow ? " " + i18nResolver.getText("repository.git.messages.doingShallowFetch") : ""));
                         RefSpec refSpec = new RefSpec()
                                 .setForceUpdate(true)
-                                .setSource(resolvedBranch)
-                                .setDestination(resolvedBranch);
+                                .setSourceDestination(resolvedRefSpec, resolvedRefSpec);
 
                         try
                         {
@@ -320,7 +314,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
                         }
                         catch (IOException e)
                         {
-                            String message = i18nResolver.getText("repository.git.messages.fetchingFailed", accessData.repositoryUrl, branchDescription.get(), sourceDirectory);
+                            String message = i18nResolver.getText("repository.git.messages.fetchingFailed", accessData.repositoryUrl, refSpecDescription.get(), sourceDirectory);
                             throw new RepositoryException(buildLogger.addErrorLogEntry(message + " " + e.getMessage()), e);
                         }
                         finally
@@ -328,9 +322,9 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
                             transport.close();
                         }
 
-                        if (resolvedBranch.startsWith(Constants.R_HEADS))
+                        if (resolvedRefSpec.startsWith(Constants.R_HEADS))
                         {
-                            localRepository.updateRef(Constants.HEAD).link(resolvedBranch);
+                            localRepository.updateRef(Constants.HEAD).link(resolvedRefSpec);
                         }
 
                         return null;
@@ -344,7 +338,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
         }
         catch (Exception e)
         {
-            String message = TextProviderUtils.getText(i18nResolver, "repository.git.messages.fetchingFailed", accessData.repositoryUrl, branchDescription.get(), sourceDirectory.getAbsolutePath());
+            String message = TextProviderUtils.getText(i18nResolver, "repository.git.messages.fetchingFailed", accessData.repositoryUrl, refSpecDescription.get(), sourceDirectory.getAbsolutePath());
             throw new RepositoryException(buildLogger.addErrorLogEntry(message + " " + e.getMessage()), e);
         }
     }
@@ -515,7 +509,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
                 public String doWithFetchConnection(@NotNull Transport transport, @NotNull FetchConnection connection) throws Exception
                 {
                     final Ref ref = resolveRefSpec(name, connection);
-                    return ref.getName();
+                    return (ref != null) ? ref.getName() : Constants.R_HEADS + "*";
                 }
             });
         }
@@ -621,6 +615,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
         FileRepository localRepository = null;
         RevWalk revWalk = null;
         TreeWalk treeWalk = null;
+        boolean singleCommit = (previousRevision != null && previousRevision.equals(targetRevision));
 
         try
         {
@@ -632,7 +627,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
             {
                 revWalk.markStart(revWalk.parseCommit(localRepository.resolve(targetRevision)));
             }
-            if (previousRevision != null)
+            if (previousRevision != null && !singleCommit)
             {
                 revWalk.markUninteresting(revWalk.parseCommit(localRepository.resolve(previousRevision)));
             }
@@ -675,6 +670,10 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
                         continue;
                     }
                     commit.addFile(new CommitFileImpl(jgitCommit.getId().getName(), entry.getChangeType() == DiffEntry.ChangeType.DELETE ? entry.getOldPath() : entry.getNewPath()));
+                }
+                if (singleCommit)
+                {
+                    break;
                 }
             }
         }

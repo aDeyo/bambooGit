@@ -390,9 +390,9 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
     }
 
     @Override
-    public void fetch(@NotNull final File sourceDirectory, final boolean useShallow) throws RepositoryException
+    public void fetch(@NotNull final File sourceDirectory, @NotNull String targetBranchOrRevision, final boolean useShallow) throws RepositoryException
     {
-        final String[] branchDescription = {"(unresolved) " + accessData.branch};
+        final String[] refSpecDescription = {"(unresolved) " + targetBranchOrRevision};
         try
         {
             createLocalRepository(sourceDirectory, null);
@@ -400,26 +400,21 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
 
             try
             {
-                final String resolvedBranch;
-                if (StringUtils.startsWithAny(accessData.branch, FQREF_PREFIXES))
+                final String resolvedRefSpec;
+                if (StringUtils.startsWithAny(targetBranchOrRevision, FQREF_PREFIXES))
                 {
-                    resolvedBranch = accessData.branch;
+                    resolvedRefSpec = targetBranchOrRevision;
                 }
                 else
                 {
-                    resolvedBranch =  resolveBranch(proxiedAccessData, sourceDirectory, accessData.branch);
+                    resolvedRefSpec = resolveBranch(proxiedAccessData, sourceDirectory, targetBranchOrRevision);
                 }
-                branchDescription[0] = resolvedBranch;
+                refSpecDescription[0] = resolvedRefSpec;
 
-                buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.fetchingBranch", resolvedBranch, accessData.repositoryUrl)
+                buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.fetching", resolvedRefSpec, accessData.repositoryUrl)
                                              + (useShallow ? " " + i18nResolver.getText("repository.git.messages.doingShallowFetch") : ""));
 
-                gitCommandProcessor.runFetchCommand(sourceDirectory, proxiedAccessData, "+"+resolvedBranch+":"+resolvedBranch, useShallow);
-
-                //if (resolvedBranch.startsWith(Constants.R_HEADS))
-                //{
-                //    gitCommandProcessor.runCheckoutCommandForBranchOrRevision(sourceDirectory, StringUtils.removeStart(resolvedBranch, Constants.R_HEADS));
-                //}
+                gitCommandProcessor.runFetchCommand(sourceDirectory, proxiedAccessData, "+"+resolvedRefSpec+":"+resolvedRefSpec, useShallow);
             }
             finally
             {
@@ -428,7 +423,7 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
         }
         catch (Exception e)
         {
-            String message = i18nResolver.getText("repository.git.messages.fetchingFailed", accessData.repositoryUrl, branchDescription[0], sourceDirectory);
+            String message = i18nResolver.getText("repository.git.messages.fetchingFailed", accessData.repositoryUrl, refSpecDescription[0], sourceDirectory);
             throw new RepositoryException(buildLogger.addErrorLogEntry(message + " " + e.getMessage()), e);
         }
     }
@@ -456,7 +451,8 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
                 return candidate;
             }
         }
-        throw new InvalidRepositoryException(i18nResolver.getText("repository.git.messages.cannotDetermineHead", RepositoryUrlObfuscator.obfuscatePasswordInUrl(accessData.repositoryUrl), accessData.branch));
+        return Constants.R_HEADS + "*"; //lets assume it's SHA hash, so we need to fetch all
+//        throw new InvalidRepositoryException(i18nResolver.getText("repository.git.messages.cannotDetermineHead", RepositoryUrlObfuscator.obfuscatePasswordInUrl(accessData.repositoryUrl), accessData.branch));
     }
 
     @NotNull

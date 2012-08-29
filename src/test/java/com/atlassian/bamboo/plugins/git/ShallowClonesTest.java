@@ -130,7 +130,7 @@ public class ShallowClonesTest extends GitAbstractTest
             for (String[] currentFetch : successiveFetches)
             {
                 GitOperationHelper helper = createJGitOperationHelper(createAccessData(protocol + currentFetch[0]));
-                helper.fetch(tmp, true);
+                helper.fetch(tmp, currentFetch[1], true);
                 revision = helper.checkout(null, tmp, currentFetch[1], revision);
                 verifyContents(tmp, currentFetch[2]);
             }
@@ -227,7 +227,7 @@ public class ShallowClonesTest extends GitAbstractTest
         File tmp = createTempDirectory();
         GitOperationHelper helper = createJGitOperationHelper(createAccessData("git://github.com/pstefaniak/72parents.git"));
 
-        helper.fetch(tmp, true);
+        helper.fetch(tmp, "f9a3b37fcbf5298c1bfa", true);
         assertEquals(FileUtils.readLines(new File(tmp, ".git/shallow")).size(), 72);
         helper.checkout(null, tmp, "f9a3b37fcbf5298c1bfa", null);
         verifyContents(tmp, "shallow-clones/72parents-contents.zip");
@@ -239,11 +239,11 @@ public class ShallowClonesTest extends GitAbstractTest
         File tmp = createTempDirectory();
         GitOperationHelper helper3 = createJGitOperationHelper(createAccessData("git://github.com/pstefaniak/3.git"));
 
-        helper3.fetch(tmp, true);
+        helper3.fetch(tmp, "HEAD", true);
         assertEquals(FileUtils.readFileToString(new File(tmp, ".git/shallow")), "4c9d0c7e6167407deff1d31af5884911202dd3db\n");
 
         GitOperationHelper helper7 = createJGitOperationHelper(createAccessData("git://github.com/pstefaniak/7.git"));
-        helper7.fetch(tmp, false);
+        helper7.fetch(tmp, "HEAD", false);
         assertEquals(FileUtils.readFileToString(new File(tmp, ".git/shallow")), "4c9d0c7e6167407deff1d31af5884911202dd3db\n");
         helper7.checkout(null, tmp, "1070f438270b8cf1ca36", null);
         verifyContents(tmp, "shallow-clones/5-contents.zip");
@@ -279,10 +279,10 @@ public class ShallowClonesTest extends GitAbstractTest
         File tmpDeep = createTempDirectory();
         GitOperationHelper helper = createJGitOperationHelper(createAccessData("git://github.com/pstefaniak/5.git"));
 
-        helper.fetch(tmpDeep, useShallow);
+        helper.fetch(tmpDeep, "HEAD", useShallow);
 
         GitOperationHelper helper7 = createJGitOperationHelper(createAccessData("git://github.com/pstefaniak/7.git"));
-        helper7.fetch(tmpDeep, false);
+        helper7.fetch(tmpDeep, "HEAD", false);
 
         RepositorySummary rsDeep = new RepositorySummary(tmpDeep);
         assertTrue(rsDeep.objects.isEmpty());

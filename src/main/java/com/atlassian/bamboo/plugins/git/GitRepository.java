@@ -198,7 +198,20 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
 
     @Override
     @NotNull
+    public BuildRepositoryChanges collectChangesForRevision(@NotNull String planKey, @NotNull String targetRevision) throws RepositoryException
+    {
+        return collectChangesSinceLastBuild(planKey, targetRevision, targetRevision);
+    }
+
+    @Override
+    @NotNull
     public BuildRepositoryChanges collectChangesSinceLastBuild(@NotNull String planKey, @Nullable final String lastVcsRevisionKey) throws RepositoryException
+    {
+        return collectChangesSinceLastBuild(planKey, lastVcsRevisionKey, null);
+    }
+
+    @NotNull
+    public BuildRepositoryChanges collectChangesSinceLastBuild(@NotNull String planKey, @Nullable final String lastVcsRevisionKey, @Nullable final String customRevision) throws RepositoryException
     {
         try
         {
@@ -206,17 +219,19 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
             final GitRepositoryAccessData substitutedAccessData = getSubstitutedAccessData();
             final GitOperationHelper helper = GitOperationHelperFactory.createGitOperationHelper(this, substitutedAccessData, sshProxyService, buildLogger, i18nResolver);
 
-            final String targetRevision = helper.obtainLatestRevision();
+            final String latestRevision = helper.obtainLatestRevision();
+            final String fetchRevision = customRevision != null ? customRevision : substitutedAccessData.branch;
+            final String targetRevision = customRevision != null ? customRevision : latestRevision;
 
-            if (targetRevision.equals(lastVcsRevisionKey))
+            if (latestRevision.equals(lastVcsRevisionKey) && customRevision == null)
             {
-                return new BuildRepositoryChangesImpl(targetRevision);
+                return new BuildRepositoryChangesImpl(latestRevision);
             }
 
             final File cacheDirectory = getCacheDirectory();
             if (lastVcsRevisionKey == null)
             {
-                buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.ccRepositoryNeverChecked", targetRevision));
+                buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.ccRepositoryNeverChecked", fetchRevision));
                 try
                 {
                     GitCacheDirectory.getCacheLock(cacheDirectory).withLock(new Callable<Void>()
@@ -224,7 +239,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                         public Void call() throws RepositoryException
                         {
                             boolean doShallowFetch = USE_SHALLOW_CLONES && substitutedAccessData.useShallowClones && !cacheDirectory.isDirectory();
-                            helper.fetch(cacheDirectory, doShallowFetch);
+                            helper.fetch(cacheDirectory, fetchRevision, doShallowFetch);
                             return null;
                         }
                     });
@@ -242,7 +257,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                 {
                     try
                     {
-                        helper.fetch(cacheDirectory, false);
+                        helper.fetch(cacheDirectory, fetchRevision, false);
                         return helper.extractCommits(cacheDirectory, lastVcsRevisionKey, targetRevision);
                     }
                     catch (Exception e) // not just RepositoryException - see HandlingSwitchingRepositoriesToUnrelatedOnesTest.testCollectChangesWithUnrelatedPreviousRevision
@@ -251,7 +266,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                         {
                             rethrowOrRemoveDirectory(e, buildLogger, cacheDirectory, "repository.git.messages.ccRecover.failedToCollectChangesets");
                             buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.ccRecover.cleanedCacheDirectory", cacheDirectory));
-                            helper.fetch(cacheDirectory, false);
+                            helper.fetch(cacheDirectory, fetchRevision, false);
                             buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.ccRecover.fetchedRemoteRepository", cacheDirectory));
                             BuildRepositoryChanges extractedChanges = helper.extractCommits(cacheDirectory, lastVcsRevisionKey, targetRevision);
                             buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.ccRecover.completed"));
@@ -272,7 +287,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
             }
             else
             {
-                return new BuildRepositoryChangesImpl(targetRevision, Collections.singletonList((CommitContext) CommitContextImpl.builder()
+                return new BuildRepositoryChangesImpl(latestRevision, Collections.singletonList((CommitContext) CommitContextImpl.builder()
                         .author(Author.UNKNOWN_AUTHOR)
                         .comment(i18nResolver.getText("repository.git.messages.unknownChanges", lastVcsRevisionKey, targetRevision))
                         .date(new Date())
@@ -306,6 +321,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
             substitutedAccessData.useShallowClones = doShallowFetch;
 
             final String targetRevision = vcsRevisionKey != null ? vcsRevisionKey : helper.obtainLatestRevision();
+            final String fetchRevision = substitutedAccessData.branch;
             final String previousRevision = helper.getRevisionIfExists(sourceDirectory, Constants.HEAD);
 
             if (isOnLocalAgent())
@@ -317,14 +333,14 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                     {
                         try
                         {
-                            helper.fetch(cacheDirectory, doShallowFetch && !cacheDirectory.isDirectory());
+                            helper.fetch(cacheDirectory, fetchRevision, doShallowFetch && !cacheDirectory.isDirectory());
                             helper.checkRevisionExistsInCacheRepository(cacheDirectory, targetRevision);
                         }
                         catch (Exception e)
                         {
                             rethrowOrRemoveDirectory(e, buildLogger, cacheDirectory, "repository.git.messages.rsRecover.failedToFetchCache");
                             buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.cleanedCacheDirectory", cacheDirectory));
-                            helper.fetch(cacheDirectory, false);
+                            helper.fetch(cacheDirectory, fetchRevision, false);
                             buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.fetchingCacheCompleted", cacheDirectory));
                         }
 
@@ -348,14 +364,14 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
             {
                 try
                 {
-                    helper.fetch(sourceDirectory, doShallowFetch);
+                    helper.fetch(sourceDirectory, targetRevision, doShallowFetch);
                     return helper.checkout(null, sourceDirectory, targetRevision, previousRevision);
                 }
                 catch (Exception e)
                 {
                     rethrowOrRemoveDirectory(e, buildLogger, sourceDirectory, "repository.git.messages.rsRecover.failedToCheckout");
                     buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.cleanedSourceDirectory", sourceDirectory));
-                    helper.fetch(sourceDirectory, false);
+                    helper.fetch(sourceDirectory, targetRevision, false);
                     buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.fetchingCompleted", sourceDirectory));
                     String returnRevision = helper.checkout(null, sourceDirectory, targetRevision, null);
                     buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.checkoutCompleted"));
@@ -467,14 +483,14 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                     {
                         try
                         {
-                            connector.fetch(cacheDirectory, doShallowFetch);
+                            connector.fetch(cacheDirectory, targetRevision, doShallowFetch);
                             connector.checkRevisionExistsInCacheRepository(cacheDirectory, targetRevision);
                         }
                         catch (Exception e)
                         {
                             rethrowOrRemoveDirectory(e, buildLogger, cacheDirectory, "repository.git.messages.rsRecover.failedToFetchCache");
                             buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.cleanedCacheDirectory", cacheDirectory));
-                            connector.fetch(cacheDirectory, false);
+                            connector.fetch(cacheDirectory, targetRevision, false);
                             buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.fetchingCacheCompleted", cacheDirectory));
                         }
                         return null;
@@ -486,13 +502,13 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
             {
                 try
                 {
-                    connector.fetch(workspaceDir, doShallowFetch);
+                    connector.fetch(workspaceDir, targetRevision, doShallowFetch);
                 }
                 catch (Exception e)
                 {
                     rethrowOrRemoveDirectory(e, buildLogger, workspaceDir, "repository.git.messages.rsRecover.failedToFetchWorkingDir");
                     buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.cleanedSourceDirectory", workspaceDir));
-                    connector.fetch(workspaceDir, false);
+                    connector.fetch(workspaceDir, targetRevision, false);
                 }
             }
         }
@@ -535,7 +551,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                 boolean doShallowFetch = USE_SHALLOW_CLONES && substitutedAccessData.useShallowClones && !cacheDirectory.isDirectory();
                 try
                 {
-                    helper.fetch(cacheDirectory, doShallowFetch);
+                    helper.fetch(cacheDirectory, targetRevision, doShallowFetch);
                     return Result.result(helper.getCommit(cacheDirectory, targetRevision));
                 }
                 catch (RepositoryException e)
