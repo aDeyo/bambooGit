@@ -16,7 +16,7 @@
     </transformation>
 
     <dependency>bamboo.web.resources:ajs</dependency>
-    <dependency>bamboo.web.resources:underscore</dependency>
+    <dependency>com.atlassian.auiplugin:ajs-underscorejs</dependency>
 
     <resource type="download" name="github.js" location="javascript/github.js"/>
     <resource type="download" name="github.css" location="github.less"/>
