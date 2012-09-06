@@ -6,6 +6,7 @@ import com.atlassian.bamboo.build.logger.NullBuildLogger;
 import com.atlassian.bamboo.commit.CommitContext;
 import com.atlassian.bamboo.commit.CommitContextImpl;
 import com.atlassian.bamboo.core.TransportProtocol;
+import com.atlassian.bamboo.plan.PlanKey;
 import com.atlassian.bamboo.plan.PlanKeys;
 import com.atlassian.bamboo.plan.branch.BranchIntegrationHelper;
 import com.atlassian.bamboo.plan.branch.VcsBranch;
@@ -198,9 +199,9 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
 
     @Override
     @NotNull
-    public BuildRepositoryChanges collectChangesForRevision(@NotNull String planKey, @NotNull String targetRevision) throws RepositoryException
+    public BuildRepositoryChanges collectChangesForRevision(@NotNull PlanKey planKey, @NotNull String targetRevision) throws RepositoryException
     {
-        return collectChangesSinceLastBuild(planKey, targetRevision, targetRevision);
+        return collectChangesSinceLastBuild(planKey.getKey(), targetRevision, targetRevision);
     }
 
     @Override
