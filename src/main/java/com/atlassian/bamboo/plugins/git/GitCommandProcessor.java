@@ -353,11 +353,12 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         if (!handler.succeeded())
         {
             // command may contain user password (url) in plaintext -> hide it from bamboo plan/build logs. see BAM-5781
+            final String stdout = RepositoryUrlObfuscator.obfuscatePasswordInUrl(outputHandler.getStdout());
             throw new GitCommandException(
                     "command " + RepositoryUrlObfuscator.obfuscatePasswordsInUrls(commandArgs) + " failed with code " + handler.getExitCode() + "." +
                     " Working directory was ["+ workingDirectory + "].", proxyException != null ? proxyException : handler.getException(),
-                    outputHandler.getStdout(),
-                    proxyErrorMessage != null ? "SSH Proxy error: " + proxyErrorMessage : outputHandler.getStdout());
+                    stdout,
+                    proxyErrorMessage != null ? "SSH Proxy error: " + proxyErrorMessage : stdout);
         }
 
         return handler.getExitCode();

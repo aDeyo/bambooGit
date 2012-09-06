@@ -1,5 +1,6 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.bamboo.core.RepositoryUrlObfuscator;
 import com.atlassian.bamboo.repository.RepositoryException;
 
 /**
@@ -49,7 +50,7 @@ class GitCommandException extends RepositoryException {
     @Override
     public String getMessage()
     {
-        final StringBuilder sb = new StringBuilder(super.getMessage());
+        final StringBuilder sb = new StringBuilder(RepositoryUrlObfuscator.obfuscatePasswordInUrl(super.getMessage()));
         sb
                 .append(", stderr:\n")
                 .append(stderr);
