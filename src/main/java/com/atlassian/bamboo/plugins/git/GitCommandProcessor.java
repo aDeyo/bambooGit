@@ -42,7 +42,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
 
     // ------------------------------------------------------------------------------------------------------- Constants
 
-    static final Pattern gitVersionPattern = Pattern.compile("^git version (.*)");
+    private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("^git version (.*)");
     private static final String SSH_OPTIONS = "-o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null";
     private static final String SSH_WIN =
             "@ssh " + SSH_OPTIONS + " %*\r\n";
@@ -120,11 +120,11 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         {
             final int exitCode = runCommand(commandBuilder, workingDirectory, outputHandler);
             String output = outputHandler.getOutput();
-            Matcher matcher = gitVersionPattern.matcher(output);
+            Matcher matcher = GIT_VERSION_PATTERN.matcher(output);
             if (!matcher.find())
             {
                 String errorMessage = "Git Executable capability `" + gitExecutable + "' does not seem to be a git client. Is it properly set?";
-                log.error(errorMessage + " Exit code: " + exitCode + " Output:\n" + output);
+                log.error(errorMessage + " Exit code: " + exitCode + " Output:\n[" + output + "]");
                 throw new RepositoryException(errorMessage);
             }
         }

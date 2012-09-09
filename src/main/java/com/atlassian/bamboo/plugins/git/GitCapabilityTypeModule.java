@@ -1,6 +1,5 @@
 package com.atlassian.bamboo.plugins.git;
 
-import com.atlassian.bamboo.v2.build.agent.capability.AbstractExecutableCapabilityTypeModule;
 import com.atlassian.bamboo.v2.build.agent.capability.AbstractMultipleExecutableCapabilityTypeModule;
 import com.google.common.collect.Lists;
 
@@ -9,7 +8,7 @@ import java.util.List;
 
 public class GitCapabilityTypeModule extends AbstractMultipleExecutableCapabilityTypeModule
 {
-    public static final String GIT_CAPABILITY = "system.git.executable";
+    public static final String GIT_CAPABILITY = "system.git.executable"; //if you change this, make sure you change com.atlassian.bamboo.upgrade.tasks.UpgradeTask3211AddNativeGitCapability too
     public static final String SSH_CAPABILITY = "system.git.executable.ssh";
 
     private static final String AGENT_CAPABILITY_TYPE_GIT_ERROR_UNDEFINED_EXECUTABLE = "agent.capability.type.git.error.undefinedExecutable";
