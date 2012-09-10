@@ -3,6 +3,7 @@ package com.atlassian.bamboo.plugins.git;
 import com.atlassian.bamboo.build.BuildLoggerManager;
 import com.atlassian.bamboo.build.fileserver.BuildDirectoryManager;
 import com.atlassian.bamboo.commit.CommitContext;
+import com.atlassian.bamboo.plan.PlanKey;
 import com.atlassian.bamboo.plan.branch.BranchIntegrationHelper;
 import com.atlassian.bamboo.plan.branch.VcsBranch;
 import com.atlassian.bamboo.plan.branch.VcsBranchImpl;
@@ -246,7 +247,7 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
 
     @Override
     @NotNull
-    public BuildRepositoryChanges collectChangesForRevision(@NotNull String planKey, @NotNull String targetRevision) throws RepositoryException
+    public BuildRepositoryChanges collectChangesForRevision(@NotNull PlanKey planKey, @NotNull String targetRevision) throws RepositoryException
     {
         return gitRepository.collectChangesForRevision(planKey, targetRevision);
     }
