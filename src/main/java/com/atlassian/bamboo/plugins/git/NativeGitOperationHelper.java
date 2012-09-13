@@ -139,7 +139,8 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
 
                     final ProxyConnectionDataBuilder proxyConnectionDataBuilder =
                             sshProxyService.createProxyConnectionDataBuilder()
-                                    .withRemoteAddress(repositoryUri.getHost(), repositoryUri.getPort() == -1 ? 22 : repositoryUri.getPort())
+                                    .withRemoteHost(repositoryUri.getHost())
+                                    .withRemotePort(repositoryUri.getPort() == -1 ? null : repositoryUri.getPort())
                                     .withRemoteUserName(StringUtils.defaultIfEmpty(proxyAccessData.username, repositoryUri.getUserInfo()))
                                     .withErrorReceiver(gitCommandProcessor);
 
