@@ -2,7 +2,6 @@ package com.atlassian.bamboo.plugins.git;
 
 import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.atlassian.bamboo.commit.CommitContext;
-import com.atlassian.bamboo.core.RepositoryUrlObfuscator;
 import com.atlassian.bamboo.plan.branch.VcsBranch;
 import com.atlassian.bamboo.plan.branch.VcsBranchImpl;
 import com.atlassian.bamboo.repository.InvalidRepositoryException;
@@ -11,6 +10,7 @@ import com.atlassian.bamboo.ssh.ProxyConnectionData;
 import com.atlassian.bamboo.ssh.ProxyConnectionDataBuilder;
 import com.atlassian.bamboo.ssh.ProxyException;
 import com.atlassian.bamboo.ssh.SshProxyService;
+import com.atlassian.bamboo.util.PasswordMaskingUtils;
 import com.atlassian.bamboo.utils.Pair;
 import com.atlassian.bamboo.v2.build.BuildRepositoryChanges;
 import com.atlassian.bamboo.v2.build.BuildRepositoryChangesImpl;
@@ -58,7 +58,7 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
     {
         super(accessData, buildLogger, i18nResolver);
         this.sshProxyService = sshProxyService;
-        this.gitCommandProcessor = new GitCommandProcessor(repository.getGitCapability(), buildLogger, accessData.commandTimeout, accessData.verboseLogs);
+        this.gitCommandProcessor = new GitCommandProcessor(repository.getGitCapability(), buildLogger, accessData.password, accessData.commandTimeout, accessData.verboseLogs);
         this.gitCommandProcessor.checkGitExistenceInSystem(repository.getWorkingDirectory());
         this.gitCommandProcessor.setSshCommand(repository.getSshCapability());
     }
@@ -453,7 +453,6 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
             }
         }
         return Constants.R_HEADS + "*"; //lets assume it's SHA hash, so we need to fetch all
-//        throw new InvalidRepositoryException(i18nResolver.getText("repository.git.messages.cannotDetermineHead", RepositoryUrlObfuscator.obfuscatePasswordInUrl(accessData.repositoryUrl), accessData.branch));
     }
 
     @NotNull
@@ -511,7 +510,7 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
             String result = gitCommandProcessor.getRemoteBranchLatestCommitHash(workingDir, proxiedAccessData, resolveBranch(proxiedAccessData, workingDir, accessData.branch));
             if (result == null)
             {
-                throw new InvalidRepositoryException(i18nResolver.getText("repository.git.messages.cannotDetermineHead", RepositoryUrlObfuscator.obfuscatePasswordInUrl(accessData.repositoryUrl), accessData.branch));
+                throw new InvalidRepositoryException(i18nResolver.getText("repository.git.messages.cannotDetermineHead", PasswordMaskingUtils.mask(accessData.repositoryUrl, accessData.password), accessData.branch));
             }
             return result;
         }

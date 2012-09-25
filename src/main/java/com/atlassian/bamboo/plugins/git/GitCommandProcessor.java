@@ -2,11 +2,12 @@ package com.atlassian.bamboo.plugins.git;
 
 import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.atlassian.bamboo.commit.CommitContext;
-import com.atlassian.bamboo.core.RepositoryUrlObfuscator;
 import com.atlassian.bamboo.repository.RepositoryException;
 import com.atlassian.bamboo.ssh.ProxyErrorReceiver;
 import com.atlassian.bamboo.util.BambooFileUtils;
 import com.atlassian.bamboo.util.BambooFilenameUtils;
+import com.atlassian.bamboo.util.BambooStringUtils;
+import com.atlassian.bamboo.util.PasswordMaskingUtils;
 import com.atlassian.bamboo.utils.Pair;
 import com.atlassian.utils.process.ExternalProcess;
 import com.atlassian.utils.process.ExternalProcessBuilder;
@@ -55,6 +56,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
 
     private final String gitExecutable;
     private final BuildLogger buildLogger;
+    private final String password;
     private final int commandTimeoutInMinutes;
     private final boolean maxVerboseOutput;
     private String proxyErrorMessage;
@@ -63,10 +65,11 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
 
     // ---------------------------------------------------------------------------------------------------- Dependencies
     // ---------------------------------------------------------------------------------------------------- Constructors
-    public GitCommandProcessor(@Nullable final String gitExecutable, @NotNull final BuildLogger buildLogger, final int commandTimeoutInMinutes, boolean maxVerboseOutput)
+    public GitCommandProcessor(@Nullable final String gitExecutable, @NotNull final BuildLogger buildLogger, @Nullable String password, final int commandTimeoutInMinutes, boolean maxVerboseOutput)
     {
         this.gitExecutable = gitExecutable;
         this.buildLogger = buildLogger;
+        this.password = password;
         Preconditions.checkArgument(commandTimeoutInMinutes>0, "Command timeout must be greater than 0");
         this.commandTimeoutInMinutes = commandTimeoutInMinutes;
         this.maxVerboseOutput = maxVerboseOutput;
@@ -325,20 +328,16 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         handler.setErrorHandler(outputHandler);
 
         final List<String> commandArgs = commandBuilder.build();
+
+        final String maskedCommandLine = PasswordMaskingUtils.mask(BambooStringUtils.toCommandLineString(commandArgs), password);
         if (maxVerboseOutput || log.isDebugEnabled())
         {
-            StringBuilder stringBuilder = new StringBuilder();
-            for (String s : RepositoryUrlObfuscator.obfuscatePasswordsInUrls(commandArgs))
-            {
-                stringBuilder.append(s).append(" ");
-            }
             if (maxVerboseOutput)
             {
-                buildLogger.addBuildLogEntry(stringBuilder.toString());
+                buildLogger.addBuildLogEntry(maskedCommandLine);
             }
-            log.debug(stringBuilder.toString());
+            log.debug("Running in " + workingDirectory + ": '" + maskedCommandLine + "'");
         }
-        //log.info("Running in " + workingDirectory + ": '" + StringUtils.join(commandArgs, "' '") + "'");
 
         final ExternalProcessBuilder externalProcessBuilder = new ExternalProcessBuilder()
                 .command(commandArgs, workingDirectory)
@@ -353,12 +352,13 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         if (!handler.succeeded())
         {
             // command may contain user password (url) in plaintext -> hide it from bamboo plan/build logs. see BAM-5781
-            final String stdout = RepositoryUrlObfuscator.obfuscatePasswordInUrl(outputHandler.getStdout());
+            final String maskedStdout = PasswordMaskingUtils.mask(outputHandler.getStdout(), password);
+            String message = "command " + maskedCommandLine + " failed with code " + handler.getExitCode() + ". Working directory was [" + workingDirectory + "].";
+
             throw new GitCommandException(
-                    "command " + RepositoryUrlObfuscator.obfuscatePasswordsInUrls(commandArgs) + " failed with code " + handler.getExitCode() + "." +
-                    " Working directory was ["+ workingDirectory + "].", proxyException != null ? proxyException : handler.getException(),
-                    stdout,
-                    proxyErrorMessage != null ? "SSH Proxy error: " + proxyErrorMessage : stdout);
+                    message, proxyException != null ? proxyException : handler.getException(),
+                    maskedStdout,
+                    proxyErrorMessage != null ? "SSH Proxy error: " + PasswordMaskingUtils.mask(proxyErrorMessage, password) : maskedStdout);
         }
 
         return handler.getExitCode();
