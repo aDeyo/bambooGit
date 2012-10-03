@@ -56,7 +56,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
 
     private final String gitExecutable;
     private final BuildLogger buildLogger;
-    private final String password;
+    private final String passwordToObfuscate;
     private final int commandTimeoutInMinutes;
     private final boolean maxVerboseOutput;
     private String proxyErrorMessage;
@@ -65,11 +65,11 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
 
     // ---------------------------------------------------------------------------------------------------- Dependencies
     // ---------------------------------------------------------------------------------------------------- Constructors
-    public GitCommandProcessor(@Nullable final String gitExecutable, @NotNull final BuildLogger buildLogger, @Nullable String password, final int commandTimeoutInMinutes, boolean maxVerboseOutput)
+    public GitCommandProcessor(@Nullable final String gitExecutable, @NotNull final BuildLogger buildLogger, @Nullable String passwordToObfuscate, final int commandTimeoutInMinutes, boolean maxVerboseOutput)
     {
         this.gitExecutable = gitExecutable;
         this.buildLogger = buildLogger;
-        this.password = password;
+        this.passwordToObfuscate = passwordToObfuscate;
         Preconditions.checkArgument(commandTimeoutInMinutes>0, "Command timeout must be greater than 0");
         this.commandTimeoutInMinutes = commandTimeoutInMinutes;
         this.maxVerboseOutput = maxVerboseOutput;
@@ -329,7 +329,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
 
         final List<String> commandArgs = commandBuilder.build();
 
-        final String maskedCommandLine = PasswordMaskingUtils.mask(BambooStringUtils.toCommandLineString(commandArgs), password);
+        final String maskedCommandLine = PasswordMaskingUtils.mask(BambooStringUtils.toCommandLineString(commandArgs), passwordToObfuscate);
         if (maxVerboseOutput || log.isDebugEnabled())
         {
             if (maxVerboseOutput)
@@ -352,13 +352,13 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         if (!handler.succeeded())
         {
             // command may contain user password (url) in plaintext -> hide it from bamboo plan/build logs. see BAM-5781
-            final String maskedStdout = PasswordMaskingUtils.mask(outputHandler.getStdout(), password);
+            final String maskedStdout = PasswordMaskingUtils.mask(outputHandler.getStdout(), passwordToObfuscate);
             String message = "command " + maskedCommandLine + " failed with code " + handler.getExitCode() + ". Working directory was [" + workingDirectory + "].";
 
             throw new GitCommandException(
                     message, proxyException != null ? proxyException : handler.getException(),
                     maskedStdout,
-                    proxyErrorMessage != null ? "SSH Proxy error: " + PasswordMaskingUtils.mask(proxyErrorMessage, password) : maskedStdout);
+                    proxyErrorMessage != null ? "SSH Proxy error: " + PasswordMaskingUtils.mask(proxyErrorMessage, passwordToObfuscate) : maskedStdout);
         }
 
         return handler.getExitCode();
