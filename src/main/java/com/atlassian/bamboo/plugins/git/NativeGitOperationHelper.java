@@ -42,7 +42,6 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
 {
     @SuppressWarnings("UnusedDeclaration")
     private static final Logger log = Logger.getLogger(GitRepository.class);
-    private static final String GIT_SCHEME = "git";
     // ------------------------------------------------------------------------------------------------------- Constants
     // ------------------------------------------------------------------------------------------------- Type Properties
     protected SshProxyService sshProxyService;
@@ -119,7 +118,7 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
     protected GitRepository.GitRepositoryAccessData adjustRepositoryAccess(@NotNull final GitRepository.GitRepositoryAccessData accessData) throws RepositoryException
     {
         final boolean sshKeypair = accessData.authenticationType == GitAuthenticationType.SSH_KEYPAIR;
-        final boolean sshWithPassword = UriUtils.isSsh(accessData.repositoryUrl) && accessData.authenticationType == GitAuthenticationType.PASSWORD;
+        final boolean sshWithPassword = UriUtils.requiresSshTransport(accessData.repositoryUrl) && accessData.authenticationType == GitAuthenticationType.PASSWORD;
         final boolean needsProxy = sshKeypair || sshWithPassword;
         if (needsProxy)
         {
@@ -127,7 +126,7 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
 
             ScpAwareUri repositoryUri = ScpAwareUri.create(proxyAccessData.repositoryUrl);
 
-            if (GIT_SCHEME.equals(repositoryUri.getScheme()) || UriUtils.isSsh(repositoryUri))
+            if (UriUtils.requiresSshTransport(repositoryUri))
             {
                 try
                 {
@@ -286,21 +285,17 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
         String repositoryUrl = repositoryAccessData.repositoryUrl;
         
         final boolean passwordAuthentication = repositoryAccessData.authenticationType == GitAuthenticationType.PASSWORD;
+        final boolean isHttpBased = repositoryUrl.startsWith("http://") || repositoryUrl.startsWith("https://");
+        final boolean acceptsPasswordInUri = isHttpBased;
 
-        if (!passwordAuthentication || UriUtils.isSsh(repositoryUrl))
+        if (!passwordAuthentication || !acceptsPasswordInUri)
         {
             return username;
         }
 
-        String password = repositoryAccessData.password;
+        final String password = StringUtils.defaultIfEmpty(repositoryAccessData.password, "none"); //otherwise we'd get a password prompt
 
-        final boolean isHttpBased = repositoryUrl.startsWith("http://") || repositoryUrl.startsWith("https://");
-        if (isHttpBased && StringUtils.isBlank(password))
-        {
-            password = "none"; //otherwise we'll get a password prompt
-        }
-
-        return StringUtils.isNotBlank(password) ? (username + ":" + password) : username;
+        return username + ":" + password;
     }
 
     private void createLocalRepository(final File sourceDirectory, final File cacheDirectory) throws RepositoryException, IOException

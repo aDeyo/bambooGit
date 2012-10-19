@@ -5,7 +5,6 @@ import org.eclipse.jgit.transport.URIish;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -13,6 +12,8 @@ public class UriUtils
 {
     static final String SSH_SCHEME = "ssh";
     static final String SCHEME_DELIMITER = "://";
+
+    public static final String SSH_PREFIX = UriUtils.SSH_SCHEME + UriUtils.SCHEME_DELIMITER;
 
     private UriUtils()
     {
@@ -31,33 +32,38 @@ public class UriUtils
         return auth;
     }
 
-
-    public static boolean isSsh(@NotNull ScpAwareUri repositoryUri)
+    public static boolean requiresSshTransport(@NotNull ScpAwareUri repositoryUri)
     {
         String scheme = repositoryUri.getScheme();
-        return (scheme == null && repositoryUri.getAbsolutePath() == null) || scheme.equals(SSH_SCHEME);
+
+        return scheme!=null && scheme.equals(SSH_SCHEME);
     }
 
-    public static boolean isSsh(@NotNull final String repositoryUrl)
+    public static boolean requiresSshTransport(@NotNull final String repositoryUrl)
     {
-        return repositoryUrl.startsWith(SSH_SCHEME + SCHEME_DELIMITER) || (!repositoryUrl.contains(SCHEME_DELIMITER) && !(new File(repositoryUrl).exists()));
+        return repositoryUrl.startsWith(SSH_PREFIX) || hasScpSyntax(repositoryUrl);
     }
 
-    public static boolean hasScpSyntax(@NotNull String s)
+    public static boolean hasScpSyntax(@NotNull String url)
     {
-        int scheme = s.indexOf(SCHEME_DELIMITER);
-        if (scheme!=-1)
+        if (hasScheme(url))
         {
             return false; //cannot use SCP syntax when a scheme is defined
         }
 
-        int pathDefinitelyStartsHere = s.indexOf("/");
+        int pathDefinitelyStartsHere = url.indexOf("/");
         if (pathDefinitelyStartsHere!=-1)
         {
-            s = s.substring(0, pathDefinitelyStartsHere); //don't care about anything after the first /
+            url = url.substring(0, pathDefinitelyStartsHere); //don't care about anything after the first /
         }
 
-        return s.contains(":");
+        return url.contains(":");
+    }
+
+    private static boolean hasScheme(@NotNull String url)
+    {
+        int scheme = url.indexOf(SCHEME_DELIMITER);
+        return scheme != -1;
     }
 
     public static URI getUriViaProxy(GitRepository.GitRepositoryAccessData proxyAccessData, ScpAwareUri repositoryUri) throws URISyntaxException

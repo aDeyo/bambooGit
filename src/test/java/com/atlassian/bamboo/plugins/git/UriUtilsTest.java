@@ -1,19 +1,54 @@
 package com.atlassian.bamboo.plugins.git;
 
 import com.atlassian.bamboo.plugins.ssh.ProxyRegistrationInfoImpl;
-import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import org.jetbrains.annotations.NotNull;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import static org.junit.Assert.assertTrue;
+
 public class UriUtilsTest
 {
-    GitRepository.GitRepositoryAccessData proxyAccessData = new GitRepository.GitRepositoryAccessData();
+    static GitRepository.GitRepositoryAccessData proxyAccessData = new GitRepository.GitRepositoryAccessData();
+    private final static ImmutableList<String> FILE_URLS = ImmutableList.of(
+            "host", "host/path", "user@host/path", "user@host",
+            "/host", "/host/path", "/user@host/path", "/user@host",
+            "host/", "host/path/", "user@host/path/", "user@host/",
+            "/host/", "/host/path/", "/user@host/path/", "/user@host/",
+            "file://host", "file://host/path", "file://login@host");
+    private final static ImmutableList<String> SSH_URLS = ImmutableList.of(
+            "ssh://user:password@host/path",
+            "ssh://user:password@host:22/path",
+            "ssh://host", "ssh://host/path", "ssh://login@host");
+
+    private final static ImmutableList<String> GIT_URLS = ImmutableList.copyOf(Iterables.transform(SSH_URLS, new Function<String, String>()
+    {
+        @Override
+        public String apply(String input)
+        {
+            return input.replace("ssh://", "git://");
+        }
+    }));
+
+    private final static ImmutableList<String> SCP_URLS = ImmutableList.of(
+            "host:", "host:/", "host:22", "host:22/path", "host:/path", "user@host:22/path",
+            "host:path", "host:path/path", "user@host:path", "user:password@host/path", "user:password@host:22/path"
+    );
+
+    private final static ImmutableList<String> UNKNOWN_URLS = ImmutableList.of(
+            "/ssh://host", "/ssh://host/path", "/ssh://login@host"
+    );
 
     @BeforeClass
-    public void setup()
+    public static void setup()
     {
         proxyAccessData.proxyRegistrationInfo = new ProxyRegistrationInfoImpl("proxyHost", 22, null, "proxyUserName");
     }
@@ -60,7 +95,7 @@ public class UriUtilsTest
     private void testUri(String minimalUriStr, boolean isRelative) throws URISyntaxException
     {
         ScpAwareUri uri = ScpAwareUri.create(minimalUriStr);
-        Assert.assertTrue(uri.getRawPath().contains("path"), uri.getRawPath() +  " should contain path");
+        Assert.assertTrue(uri.getRawPath() +  " should contain path", uri.getRawPath().contains("path"));
         Assert.assertEquals(uri.isRelativePath(), isRelative);
         URI minimalUriViaProxy = UriUtils.getUriViaProxy(proxyAccessData, uri);
     }
@@ -68,22 +103,49 @@ public class UriUtilsTest
     @Test
     public void recognisesScpLikeUris()
     {
-        Assert.assertFalse(UriUtils.hasScpSyntax("host"));
-        Assert.assertFalse(UriUtils.hasScpSyntax("host/path"));
-        Assert.assertFalse(UriUtils.hasScpSyntax("user@host/path"));
-        Assert.assertFalse(UriUtils.hasScpSyntax("ssh://user:password@host/path"));
-        Assert.assertFalse(UriUtils.hasScpSyntax("ssh://user:password@host:22/path"));
+        assertTrue(none(FILE_URLS, hasScpSyntax()));
 
-        Assert.assertTrue(UriUtils.hasScpSyntax("host:"));
-        Assert.assertTrue(UriUtils.hasScpSyntax("host:22"));
-        Assert.assertTrue(UriUtils.hasScpSyntax("host:22/path"));
-        Assert.assertTrue(UriUtils.hasScpSyntax("host:/path"));
-        Assert.assertTrue(UriUtils.hasScpSyntax("user@host:22/path"));
-        Assert.assertTrue(UriUtils.hasScpSyntax("host:path"));
-        Assert.assertTrue(UriUtils.hasScpSyntax("host:path/path"));
-        Assert.assertTrue(UriUtils.hasScpSyntax("user@host:path"));
-        Assert.assertTrue(UriUtils.hasScpSyntax("user:password@host/path"));
-        Assert.assertTrue(UriUtils.hasScpSyntax("user:password@host:22/path"));
+        assertTrue(none(SSH_URLS, hasScpSyntax()));
+
+        assertTrue(Iterables.all(SCP_URLS, hasScpSyntax()));
     }
 
-}
+    private <T> boolean none(@NotNull Iterable<T> iterable, @NotNull Predicate<? super T> predicate)
+    {
+        return !Iterables.any(iterable, predicate);
+    }
+
+    private Predicate<? super String> hasScpSyntax()
+    {
+        return new Predicate<String>()
+        {
+            @Override
+            public boolean apply(String url)
+            {
+                return UriUtils.hasScpSyntax(url);
+            }
+        };
+    }
+
+    @Test
+    public void recognisesSshTransport()
+    {
+        assertTrue(none(FILE_URLS, requiresSshTransport()));
+        assertTrue(none(UNKNOWN_URLS, requiresSshTransport()));
+
+        assertTrue(Iterables.all(SSH_URLS, requiresSshTransport()));
+        assertTrue(Iterables.all(SCP_URLS, requiresSshTransport()));
+        assertTrue(none(GIT_URLS, requiresSshTransport()));
+    }
+
+    private Predicate<? super String> requiresSshTransport()
+    {
+        return new Predicate<String>()
+        {
+            @Override
+            public boolean apply(String url)
+            {
+                return UriUtils.requiresSshTransport(ScpAwareUri.create(url));
+            }
+        };
+    }}

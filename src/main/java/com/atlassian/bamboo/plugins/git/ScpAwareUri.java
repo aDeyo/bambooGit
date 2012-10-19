@@ -7,7 +7,6 @@ import java.net.URI;
 
 public class ScpAwareUri
 {
-    private static final String SSH_PREFIX = UriUtils.SSH_SCHEME + UriUtils.SCHEME_DELIMITER;
     URI delegate;
     private final boolean relativePath;
 
@@ -28,7 +27,7 @@ public class ScpAwareUri
             boolean noSlash = slashIndex == -1;
             boolean noSlashAfterColon = colonIndex < slashIndex && colonIndex+1!=slashIndex;
             isRelativePath = noSlash || noSlashAfterColon;
-            url = SSH_PREFIX + (isRelativePath ? url.replace(":", "/") : url);
+            url = UriUtils.SSH_PREFIX + (isRelativePath ? url.replace(":", "/") : url);
         }
         return new ScpAwareUri(URI.create(url), isRelativePath);
     }
