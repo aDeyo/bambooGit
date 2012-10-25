@@ -14,7 +14,6 @@ import java.io.File;
 
 public class VariableSubstitutionTest extends GitAbstractTest
 {
-
     @Test
     public void testIfCachesAreEqual() throws Exception
     {
@@ -44,7 +43,7 @@ public class VariableSubstitutionTest extends GitAbstractTest
         };
     }
 
-    @Test
+    @Test(dataProvider = "validationData")
     public void testIfValidationWithVariablesIsTheSameAsPlain(final String plainUrl, final String variableUrl, final String variableValue) throws Exception
     {
         GitRepository repository = createGitRepository();
