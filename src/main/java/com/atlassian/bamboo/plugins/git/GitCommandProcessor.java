@@ -196,13 +196,13 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         runCommand(commandBuilder, workingDirectory, new LoggingOutputHandler(buildLogger));
     }
 
-    public void runCheckoutCommand(@NotNull final File workingDirectory, String revision) throws RepositoryException
+    public void runCheckoutCommand(@NotNull final File workingDirectory, String revision, String configuredBranchName) throws RepositoryException
     {
         /**
          * this call to git log checks if requested revision is considered as HEAD of resolved branch. If so, instead of calling explicit revision,
          * checkout to branch is called to avoid DETACHED HEAD
          */
-        String possibleBranch = getPossibleBranchNameForCheckout(workingDirectory, revision);
+        String possibleBranch = getPossibleBranchNameForCheckout(workingDirectory, revision, configuredBranchName);
 
         String destination = revision;
         if (StringUtils.isNotBlank(possibleBranch))
@@ -237,7 +237,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
 
     // -------------------------------------------------------------------------------------------------- Helper Methods
 
-    public String getPossibleBranchNameForCheckout(File workingDirectory, String revision) throws RepositoryException
+    public String getPossibleBranchNameForCheckout(File workingDirectory, String revision, String configuredBranchName) throws RepositoryException
     {
         GitCommandBuilder commandBuilder = createCommandBuilder("log", "-1", "--format=%d", "--decorate=full");
         commandBuilder.append(revision);
@@ -254,7 +254,11 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
             {
                 if (possibleBranch.startsWith(Constants.R_HEADS))
                 {
-                    return StringUtils.removeStart(possibleBranch, Constants.R_HEADS);
+                    String possibleBranchName = StringUtils.removeStart(possibleBranch, Constants.R_HEADS);
+                    if (possibleBranchName.equals(configuredBranchName) || (StringUtils.isBlank(configuredBranchName) && possibleBranchName.equals(Constants.MASTER)))
+                    {
+                        return possibleBranchName;
+                    }
                 }
             }
         }

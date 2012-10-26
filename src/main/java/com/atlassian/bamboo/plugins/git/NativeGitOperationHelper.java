@@ -67,7 +67,7 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
     @Override
     public void pushRevision(@NotNull final File sourceDirectory, @NotNull String revision) throws RepositoryException
     {
-        String possibleBranch = gitCommandProcessor.getPossibleBranchNameForCheckout(sourceDirectory, revision);
+        String possibleBranch = gitCommandProcessor.getPossibleBranchNameForCheckout(sourceDirectory, revision, accessData.branch);
         if (StringUtils.isBlank(possibleBranch))
         {
             throw new RepositoryException("Can't guess branch name for revision " + revision + " when trying to perform push.");
@@ -372,7 +372,7 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
             File lck = new File(sourceDirectory, "index.lock");
             FileUtils.deleteQuietly(lck);
 
-            gitCommandProcessor.runCheckoutCommand(sourceDirectory, targetRevision);
+            gitCommandProcessor.runCheckoutCommand(sourceDirectory, targetRevision, accessData.branch);
             if (accessData.useSubmodules)
             {
                 gitCommandProcessor.runSubmoduleUpdateCommand(sourceDirectory);

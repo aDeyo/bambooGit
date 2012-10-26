@@ -306,7 +306,7 @@ public class GitOperationHelperTest extends GitAbstractTest
             String rev = connector.commit(tmp, "message", COMITTER_NAME, COMITTER_EMAIL);
             assertTrue(StringUtils.isNotBlank(rev));
 
-            connector.gitCommandProcessor.runCheckoutCommand(tmp, branchName);
+            connector.gitCommandProcessor.runCheckoutCommand(tmp, branchName, branchName);
 
             FileUtils.writeStringToFile(new File(tmp, createdFile), "data");
             connector.gitCommandProcessor.runCommand(new GitCommandBuilder("add", createdFile), tmp);
