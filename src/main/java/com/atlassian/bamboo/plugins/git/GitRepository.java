@@ -114,19 +114,19 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     private static final Logger log = Logger.getLogger(GitRepository.class);
     private BranchIntegrationHelper branchIntegrationHelper;
 
-    static class GitRepositoryAccessData implements Serializable
+    public static class GitRepositoryAccessData implements Serializable
     {
-        String repositoryUrl;
-        String branch;
-        String username;
-        String password;
-        String sshKey;
-        String sshPassphrase;
-        GitAuthenticationType authenticationType;
-        boolean useShallowClones;
-        boolean useSubmodules;
-        int commandTimeout;
-        boolean verboseLogs;
+        protected String repositoryUrl;
+        protected String branch;
+        protected String username;
+        protected String password;
+        protected String sshKey;
+        protected String sshPassphrase;
+        protected GitAuthenticationType authenticationType;
+        protected boolean useShallowClones;
+        protected boolean useSubmodules;
+        protected int commandTimeout;
+        protected boolean verboseLogs;
 
         transient ProxyRegistrationInfo proxyRegistrationInfo;
 
@@ -146,6 +146,126 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
             data.verboseLogs = this.verboseLogs;
 
             return data;
+        }
+
+        public String getRepositoryUrl()
+        {
+            return repositoryUrl;
+        }
+
+        public void setRepositoryUrl(final String repositoryUrl)
+        {
+            this.repositoryUrl = repositoryUrl;
+        }
+
+        public String getBranch()
+        {
+            return branch;
+        }
+
+        public void setBranch(final String branch)
+        {
+            this.branch = branch;
+        }
+
+        public String getUsername()
+        {
+            return username;
+        }
+
+        public void setUsername(final String username)
+        {
+            this.username = username;
+        }
+
+        public String getPassword()
+        {
+            return password;
+        }
+
+        public void setPassword(final String password)
+        {
+            this.password = password;
+        }
+
+        public String getSshKey()
+        {
+            return sshKey;
+        }
+
+        public void setSshKey(final String sshKey)
+        {
+            this.sshKey = sshKey;
+        }
+
+        public String getSshPassphrase()
+        {
+            return sshPassphrase;
+        }
+
+        public void setSshPassphrase(final String sshPassphrase)
+        {
+            this.sshPassphrase = sshPassphrase;
+        }
+
+        public GitAuthenticationType getAuthenticationType()
+        {
+            return authenticationType;
+        }
+
+        public void setAuthenticationType(final GitAuthenticationType authenticationType)
+        {
+            this.authenticationType = authenticationType;
+        }
+
+        public boolean isUseShallowClones()
+        {
+            return useShallowClones;
+        }
+
+        public void setUseShallowClones(final boolean useShallowClones)
+        {
+            this.useShallowClones = useShallowClones;
+        }
+
+        public boolean isUseSubmodules()
+        {
+            return useSubmodules;
+        }
+
+        public void setUseSubmodules(final boolean useSubmodules)
+        {
+            this.useSubmodules = useSubmodules;
+        }
+
+        public int getCommandTimeout()
+        {
+            return commandTimeout;
+        }
+
+        public void setCommandTimeout(final int commandTimeout)
+        {
+            this.commandTimeout = commandTimeout;
+        }
+
+        public boolean isVerboseLogs()
+        {
+            return verboseLogs;
+        }
+
+        public void setVerboseLogs(final boolean verboseLogs)
+        {
+            this.verboseLogs = verboseLogs;
+        }
+
+        public ProxyRegistrationInfo getProxyRegistrationInfo()
+        {
+            return proxyRegistrationInfo;
+        }
+
+        public void setProxyRegistrationInfo(final ProxyRegistrationInfo proxyRegistrationInfo)
+        {
+            this.proxyRegistrationInfo = proxyRegistrationInfo;
         }
     }
     private VcsBranch branch;
