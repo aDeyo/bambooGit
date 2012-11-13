@@ -3,6 +3,9 @@
     <description>${project.description}</description>
     <version>${project.version}</version>
     <vendor name="${project.organization.name}" url="${project.organization.url}" />
+    <bundle-instructions>
+      <Export-Package>com.atlassian.bamboo.plugins.git</Export-Package>
+    </bundle-instructions>
   </plugin-info>
 
   <resource type="i18n" name="i18n" location="com.atlassian.bamboo.plugins.git.i18n"/>
