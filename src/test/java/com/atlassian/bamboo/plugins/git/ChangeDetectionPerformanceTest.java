@@ -2,12 +2,14 @@ package com.atlassian.bamboo.plugins.git;
 
 import com.atlassian.bamboo.repository.RepositoryException;
 import com.atlassian.bamboo.utils.Pair;
+import org.apache.commons.io.output.NullOutputStream;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.apache.sshd.ClientChannel;
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.SshClient;
 import org.apache.sshd.SshServer;
 import org.apache.sshd.client.channel.ChannelExec;
-import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.server.Command;
@@ -24,14 +26,18 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.StringBufferInputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class ChangeDetectionPerformanceTest extends GitAbstractTest
@@ -39,16 +45,20 @@ public class ChangeDetectionPerformanceTest extends GitAbstractTest
     private static final Logger log = Logger.getLogger(ChangeDetectionPerformanceTest.class);
     private static final int NUM_CD_RUNS = 10;
     private static final String GIT_COMMAND = "git-upload-pack '/pbruski/bamboo-git.git'";
-    private SshServer server;
+    private SshServer apacheSshdServer;
     private Callable<String> CD_JGIT;
     private Callable<String> CD_NATIVE_GIT;
     private Callable<String> CD_NATIVE_SSH;
     private Callable<String> CD_JAVA_SSH;
+    private SshClient apacheSshdClient;
 
     @BeforeClass
     public void setUp() throws IOException, RepositoryException
     {
-        server = createServer();
+        Logger.getRootLogger().setLevel(Level.WARN);
+        apacheSshdServer = createServer();
+        apacheSshdClient = createApacheSshdClient();
+
         CD_JGIT = new Callable<String>()
         {
             final JGitOperationHelper gitOperationHelper = createJGitOperationHelper(createAccessData(getServerUrl(), "master", "user", "password", null, null));
@@ -75,8 +85,8 @@ public class ChangeDetectionPerformanceTest extends GitAbstractTest
         {
             final ProcessBuilder pb = new ProcessBuilder(
                     "ssh",
-                    "-p" + server.getPort(),
-                    server.getHost(),
+                    "-p" + apacheSshdServer.getPort(),
+                    apacheSshdServer.getHost(),
                     "-o StrictHostKeyChecking=no",
                     "-o BatchMode=yes",
                     "-o UserKnownHostsFile=/dev/null",
@@ -101,69 +111,107 @@ public class ChangeDetectionPerformanceTest extends GitAbstractTest
             @Override
             public String call() throws Exception
             {
-                SshClient sshClient = SshClient.setUpDefaultClient();
-                sshClient.start();
-                ConnectFuture connect = sshClient.connect(server.getHost(), server.getPort());
-                ClientSession session = connect.awaitUninterruptibly().getSession();
+                ClientSession session = apacheSshdClient.connect(apacheSshdServer.getHost(), apacheSshdServer.getPort()).await().getSession();
+                session.authPassword("", "").await().isSuccess();
                 ChannelExec ls = session.createExecChannel(GIT_COMMAND);
-                ByteArrayOutputStream err = new ByteArrayOutputStream(65535);
-                ByteArrayOutputStream out = new ByteArrayOutputStream(65535);
-                ls.setErr(err);
-                ls.setOut(out);
-                ls.setIn(new StringBufferInputStream("0000"));
-                ls.open();
+                ls.setErr(new NullOutputStream());
+                PipedInputStream fakeGitOutput = new PipedInputStream();
+                ls.setOut(new PipedOutputStream(fakeGitOutput));
+                ls.setIn(new ByteArrayInputStream(MockGitCommand.GIT_EOM_STRING.getBytes() ));
 
+                ls.open().awaitUninterruptibly();
+                String response = getUntilEom(fakeGitOutput);
+                String revision = getRevision( response );
 
-                return getRevision(out.toString());
+                ls.waitFor(ClientChannel.CLOSED, 0);
+                ls.close(false);
+                session.close(true);
+                return revision;
             }
         };
+    }
+
+    private SshClient createApacheSshdClient()
+    {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        return client;
     }
 
     @AfterClass
     public void tearDown() throws InterruptedException
     {
-        server.stop(true);
+        apacheSshdServer.stop(true);
     }
 
     @Test
     public void testJgitCdPerformance() throws Exception
     {
-        testPerformance(CD_JGIT);
+        testPerformance("JGit based", CD_JGIT);
     }
 
     @Test
     public void testNativeGitCdPerformance() throws Exception
     {
-        testPerformance(CD_NATIVE_GIT);
+        testPerformance("Native Git based", CD_NATIVE_GIT);
     }
 
     @Test
     public void testNativeSshCdPerformance() throws Exception
     {
-        testPerformance(CD_NATIVE_SSH);
+        testPerformance("Native SSH based", CD_NATIVE_SSH);
     }
 
-//    @Test
-//    public void testJavaSshPerformance() throws Exception
-//    {
-//        testPerformance(CD_JAVA_SSH);
-//    }
+    @Test
+    public void testJavaSshPerformance() throws Exception
+    {
+        testPerformance("Apache SSHD based", CD_JAVA_SSH);
+    }
 
-    private void testPerformance(Callable<String> cdRoutine) throws Exception
+    private void testPerformance(String testType, Callable<String> cdRoutine) throws Exception
     {
         Pair<String, Long> result = time(NUM_CD_RUNS, cdRoutine);
 
         Long time = result.second;
-        String revision = result.first;
-        log.info("revision " + revision + " " + TimeUnit.NANOSECONDS.toMillis(time) + "ms");
+        log.warn(testType + ": " + TimeUnit.NANOSECONDS.toMillis(time) + "ms");
     }
 
     private String getServerUrl()
     {
-        return "ssh://user@" + server.getHost() + ":" + server.getPort() + "/fakepath.git";
+        return "ssh://user@" + apacheSshdServer.getHost() + ":" + apacheSshdServer.getPort() + "/fakepath.git";
     }
 
-    private Pair<String, Long> time(int times, Callable<String> callable) throws Exception
+    private Pair<String, Long> time(int times, final Callable<String> callable) throws Exception
+    {
+        String result = null;
+
+        ExecutorService executorService = Executors.newFixedThreadPool(100);
+        long start = System.nanoTime();
+        final CountDownLatch latch = new CountDownLatch(times);
+        for (int i=0; i<times; ++i)
+        {
+            executorService.execute(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        callable.call();
+                        latch.countDown();
+                    } catch (Exception e)
+                    {
+                        log.warn("", e);
+                    }
+                }
+            });
+        }
+        latch.await();
+
+        return Pair.make(result, System.nanoTime() - start);
+    }
+
+    private Pair<String, Long> time2(int times, Callable<String> callable) throws Exception
     {
         long start = System.nanoTime();
         String result = null;
@@ -175,7 +223,6 @@ public class ChangeDetectionPerformanceTest extends GitAbstractTest
 
         return Pair.make(result, System.nanoTime() - start);
     }
-
 
     private SshServer createServer() throws IOException
     {
@@ -243,6 +290,6 @@ public class ChangeDetectionPerformanceTest extends GitAbstractTest
 
     private static String getRevision(String response)
     {
-        return response.replace(" .*", "");
+        return response.substring(0, response.indexOf(' '));
     }
 }

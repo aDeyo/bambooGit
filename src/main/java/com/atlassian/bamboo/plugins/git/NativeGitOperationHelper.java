@@ -502,7 +502,8 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
         try
         {
             File workingDir = new File(".");
-            String result = gitCommandProcessor.getRemoteBranchLatestCommitHash(workingDir, proxiedAccessData, resolveBranch(proxiedAccessData, workingDir, accessData.branch));
+            String branchRef = resolveBranch(proxiedAccessData, workingDir, accessData.branch);
+            String result = gitCommandProcessor.getRemoteBranchLatestCommitHash(workingDir, proxiedAccessData, branchRef);
             if (result == null)
             {
                 throw new InvalidRepositoryException(i18nResolver.getText("repository.git.messages.cannotDetermineHead", PasswordMaskingUtils.mask(accessData.repositoryUrl, accessData.password), accessData.branch));

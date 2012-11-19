@@ -21,7 +21,6 @@ public class MockGitCommand implements Command
     public MockGitCommand(String command)
     {
         this.command = command;
-        System.out.println("Command: " + command);
     }
 
     @Override
@@ -40,7 +39,6 @@ public class MockGitCommand implements Command
                     while ((i=in.read(bytes))!=-1)
                     {
                         String s = new String(bytes, 0, i);
-                        System.out.println("From client to server: " + s);
                         if (s.equals(GIT_EOM_STRING))
                         {
                             callback.onExit(0);
