@@ -251,6 +251,14 @@ public class GitAbstractTest
         accessData.password = password;
         accessData.sshKey = sshKey;
         accessData.sshPassphrase = sshPassphrase;
+        if (password!=null)
+        {
+            accessData.authenticationType = GitAuthenticationType.PASSWORD;
+        }
+        if (password==null && sshKey==null)
+        {
+            accessData.authenticationType = GitAuthenticationType.NONE;
+        }
         accessData.commandTimeout = 1;
         return accessData;
     }
