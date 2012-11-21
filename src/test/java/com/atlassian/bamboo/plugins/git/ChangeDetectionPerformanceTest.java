@@ -43,7 +43,7 @@ import java.util.concurrent.TimeUnit;
 public class ChangeDetectionPerformanceTest extends GitAbstractTest
 {
     private static final Logger log = Logger.getLogger(ChangeDetectionPerformanceTest.class);
-    private static final int NUM_CD_RUNS = 10;
+    private static final int NUM_CD_RUNS = 100;
     private static final String GIT_COMMAND = "git-upload-pack '/pbruski/bamboo-git.git'";
     private SshServer apacheSshdServer;
     private Callable<String> CD_JGIT;
@@ -181,7 +181,7 @@ public class ChangeDetectionPerformanceTest extends GitAbstractTest
         return "ssh://user@" + apacheSshdServer.getHost() + ":" + apacheSshdServer.getPort() + "/fakepath.git";
     }
 
-    private Pair<String, Long> time(int times, final Callable<String> callable) throws Exception
+    private Pair<String, Long> timeLoad(int times, final Callable<String> callable) throws Exception
     {
         String result = null;
 
@@ -211,7 +211,7 @@ public class ChangeDetectionPerformanceTest extends GitAbstractTest
         return Pair.make(result, System.nanoTime() - start);
     }
 
-    private Pair<String, Long> time2(int times, Callable<String> callable) throws Exception
+    private Pair<String, Long> time(int times, Callable<String> callable) throws Exception
     {
         long start = System.nanoTime();
         String result = null;
