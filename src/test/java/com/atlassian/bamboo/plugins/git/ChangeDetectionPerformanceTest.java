@@ -2,6 +2,7 @@ package com.atlassian.bamboo.plugins.git;
 
 import com.atlassian.bamboo.repository.RepositoryException;
 import com.atlassian.bamboo.utils.Pair;
+import com.google.common.collect.Lists;
 import org.apache.commons.io.output.NullOutputStream;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -17,6 +18,7 @@ import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.UserAuth;
+import org.apache.sshd.server.auth.UserAuthNone;
 import org.apache.sshd.server.auth.UserAuthPassword;
 import org.apache.sshd.server.auth.UserAuthPublicKey;
 import org.apache.sshd.server.channel.ChannelSession;
@@ -233,7 +235,7 @@ public class ChangeDetectionPerformanceTest extends GitAbstractTest
         SimpleGeneratorHostKeyProvider keyPairProvider = new SimpleGeneratorHostKeyProvider();
         keyPairProvider.loadKeys();
         sshServer.setKeyPairProvider(keyPairProvider);
-        sshServer.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPassword.Factory(), new UserAuthPublicKey.Factory()));
+        sshServer.setUserAuthFactories(Lists.newArrayList(new UserAuthPassword.Factory(), new UserAuthPublicKey.Factory(), new UserAuthNone.Factory()));
         sshServer.setPublickeyAuthenticator(new PublickeyAuthenticator()
         {
             @Override
@@ -274,6 +276,10 @@ public class ChangeDetectionPerformanceTest extends GitAbstractTest
         while (true)
         {
             int read = inputStream.read(bytes);
+            if (read==-1)
+            {
+                throw new IllegalArgumentException("End of input reached without EOM marker");
+            }
             sb.append( new String(bytes, 0, read));
             if (sb.toString().endsWith("\n" + MockGitCommand.GIT_EOM_STRING))
             {
