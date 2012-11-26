@@ -19,6 +19,7 @@ import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.SystemUtils;
@@ -32,6 +33,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -44,6 +46,8 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
     // ------------------------------------------------------------------------------------------------------- Constants
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("^git version (.*)");
+    private static final Pattern LS_REMOTE_LINE_PATTERN = Pattern.compile("^([0-9a-f]{40})\\s+(.*)");
+
     private static final String SSH_OPTIONS = "-o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null";
     private static final String SSH_WIN =
             "@ssh " + SSH_OPTIONS + " %*\r\n";
@@ -265,41 +269,33 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         return "";
     }
 
-    @Nullable
-    public String getRemoteBranchLatestCommitHash(File workingDirectory, GitRepository.GitRepositoryAccessData accessData, String branchRef) throws RepositoryException
+    @NotNull
+    public Map<String, String> getRemoteRefs(File workingDirectory, GitRepository.GitRepositoryAccessData accessData) throws RepositoryException
     {
-        LineOutputHandlerImpl goh = new LineOutputHandlerImpl();
-        GitCommandBuilder commandBuilder = createCommandBuilder("ls-remote", accessData.repositoryUrl, branchRef);
+        final LineOutputHandlerImpl goh = new LineOutputHandlerImpl();
+        final GitCommandBuilder commandBuilder = createCommandBuilder("ls-remote", accessData.repositoryUrl);
         runCommand(commandBuilder, workingDirectory, goh);
-        for (String ref : goh.getLines())
-        {
-            if (ref.contains(branchRef))
-            {
-                return ref.substring(0, ref.indexOf(branchRef)).trim();
-            }
-
-        }
-        return null;
+        final Map<String, String> result = parseLsRemoteOutput(goh);
+        return result;
     }
 
-    public Set<String> getRemoteRefs(File workingDirectory, GitRepository.GitRepositoryAccessData accessData) throws RepositoryException
+    @NotNull
+    static Map<String, String> parseLsRemoteOutput(final LineOutputHandlerImpl goh)
     {
-        LineOutputHandlerImpl goh = new LineOutputHandlerImpl();
-        GitCommandBuilder commandBuilder = createCommandBuilder("ls-remote", accessData.repositoryUrl);
-        runCommand(commandBuilder, workingDirectory, goh);
-        Set<String> result = Sets.newHashSet();
-        for (String ref : goh.getLines())
+        final Map<String, String> refs = Maps.newLinkedHashMap();
+        for (final String ref : goh.getLines())
         {
             if (ref.contains("^{}"))
             {
                 continue;
             }
-            if (ref.contains("refs"))
+            final Matcher matcher = LS_REMOTE_LINE_PATTERN.matcher(ref);
+            if (matcher.matches())
             {
-                result.add(ref.substring(ref.indexOf("refs")));
+                refs.put(matcher.group(2), matcher.group(1));
             }
         }
-        return result;
+        return refs;
     }
 
     public GitCommandBuilder createCommandBuilder(String... commands)
@@ -406,7 +402,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         log.info("from revision: [" + lastVcsRevisionKey + "]; to revision: [" + targetRevision + "]");
         final CommitOutputHandler coh = new CommitOutputHandler(shallows, maxCommits);
         runCommand(commandBuilder, cacheDirectory, coh);
-        return new Pair<List<CommitContext>, Integer>(coh.getExtractedCommits(), coh.getSkippedCommitCount());
+        return Pair.make(coh.getExtractedCommits(), coh.getSkippedCommitCount());
     }
 
     interface GitOutputHandler extends OutputHandler

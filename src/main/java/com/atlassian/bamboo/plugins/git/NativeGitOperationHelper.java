@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class NativeGitOperationHelper extends AbstractGitOperationHelper implements GitOperationHelper
@@ -403,7 +404,15 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
                 }
                 else
                 {
-                    resolvedRefSpec = resolveBranch(proxiedAccessData, sourceDirectory, targetBranchOrRevision);
+                    final Pair<String, String> symbolicRefAndHash = resolveBranch(proxiedAccessData, sourceDirectory, targetBranchOrRevision);
+                    if (symbolicRefAndHash==null)
+                    {
+                        resolvedRefSpec=Constants.R_HEADS + "*"; //assume it's an SHA hash, so we need to fetch all
+                    }
+                    else
+                    {
+                        resolvedRefSpec=symbolicRefAndHash.first;
+                    }
                 }
                 refSpecDescription[0] = resolvedRefSpec;
 
@@ -424,9 +433,12 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
         }
     }
 
-    private String resolveBranch(GitRepository.GitRepositoryAccessData accessData, final File sourceDirectory, final String branch) throws RepositoryException
+    @Nullable
+    private Pair<String, String> resolveBranch(final GitRepository.GitRepositoryAccessData accessData,
+                                               final File sourceDirectory,
+                                               final String branch) throws RepositoryException
     {
-        Collection<String> remoteRefs = gitCommandProcessor.getRemoteRefs(sourceDirectory, accessData);
+        final Map<String, String> remoteRefs = gitCommandProcessor.getRemoteRefs(sourceDirectory, accessData);
         final Collection<String> candidates;
         if (StringUtils.isBlank(branch))
         {
@@ -440,14 +452,15 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
         {
             candidates = Arrays.asList(branch, Constants.R_HEADS + branch, Constants.R_TAGS + branch);
         }
-        for (String candidate : candidates)
+        for (final String symbolicName : candidates)
         {
-            if (remoteRefs.contains(candidate))
+            final String hash = remoteRefs.get(symbolicName);
+            if (hash!=null)
             {
-                return candidate;
+                return Pair.make(symbolicName, hash);
             }
         }
-        return Constants.R_HEADS + "*"; //lets assume it's SHA hash, so we need to fetch all
+        return null;
     }
 
     @NotNull
@@ -457,13 +470,13 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
         final GitRepository.GitRepositoryAccessData proxiedAccessData = adjustRepositoryAccess(repositoryData);
         try
         {
-            Set<String> refs = gitCommandProcessor.getRemoteRefs(workingDir, proxiedAccessData);
-            List<VcsBranch> openBranches = Lists.newArrayList();
-            for (String ref : refs)
+            final Map<String, String> refs = gitCommandProcessor.getRemoteRefs(workingDir, proxiedAccessData);
+            final List<VcsBranch> openBranches = Lists.newArrayList();
+            for (final String refSymbolicName : refs.keySet())
             {
-                if (ref.startsWith(Constants.R_HEADS))
+                if (refSymbolicName.startsWith(Constants.R_HEADS))
                 {
-                    openBranches.add(new VcsBranchImpl(ref.substring(Constants.R_HEADS.length())));
+                    openBranches.add(new VcsBranchImpl(refSymbolicName.substring(Constants.R_HEADS.length())));
                 }
             }
             return openBranches;
@@ -501,14 +514,14 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
         final GitRepository.GitRepositoryAccessData proxiedAccessData = adjustRepositoryAccess(accessData);
         try
         {
-            File workingDir = new File(".");
-            String branchRef = resolveBranch(proxiedAccessData, workingDir, accessData.branch);
-            String result = gitCommandProcessor.getRemoteBranchLatestCommitHash(workingDir, proxiedAccessData, branchRef);
-            if (result == null)
+            final File workingDir = new File(".");
+            final Pair<String, String> branchRef = resolveBranch(proxiedAccessData, workingDir, accessData.branch);
+            if (branchRef==null)
             {
                 throw new InvalidRepositoryException(i18nResolver.getText("repository.git.messages.cannotDetermineHead", PasswordMaskingUtils.mask(accessData.repositoryUrl, accessData.password), accessData.branch));
             }
-            return result;
+
+            return branchRef.second;
         }
         finally
         {
