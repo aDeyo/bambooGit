@@ -7,8 +7,10 @@ import com.atlassian.bamboo.ssh.ProxyErrorReceiver;
 import com.atlassian.bamboo.util.BambooFileUtils;
 import com.atlassian.bamboo.util.BambooFilenameUtils;
 import com.atlassian.bamboo.util.BambooStringUtils;
+import com.atlassian.bamboo.util.Narrow;
 import com.atlassian.bamboo.util.PasswordMaskingUtils;
 import com.atlassian.bamboo.utils.Pair;
+import com.atlassian.fugue.Option;
 import com.atlassian.utils.process.ExternalProcess;
 import com.atlassian.utils.process.ExternalProcessBuilder;
 import com.atlassian.utils.process.LineOutputHandler;
@@ -18,6 +20,9 @@ import com.atlassian.utils.process.StringOutputHandler;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -35,6 +40,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -110,6 +116,29 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
     // ----------------------------------------------------------------------------------------------- Interface Methods
     // -------------------------------------------------------------------------------------------------- Public Methods
 
+    private final static Cache<Pair<File, GitCommandProcessor>, Option<String>> GIT_EXISTENCE_CHECK_RESULT =
+            CacheBuilder.newBuilder().expireAfterWrite(15, TimeUnit.MINUTES).build(new CacheLoader<Pair<File, GitCommandProcessor>, Option<String>>()
+            {
+                @Override
+                public Option<String> load(final Pair<File, GitCommandProcessor> input) throws Exception
+                {
+                    final GitCommandProcessor gitCommandProcessor = input.second;
+                    final File workingDirectory = input.first;
+                    final GitCommandBuilder commandBuilder = gitCommandProcessor.createCommandBuilder("version");
+
+                    final GitStringOutputHandler outputHandler = new GitStringOutputHandler();
+                    final int exitCode = gitCommandProcessor.runCommand(commandBuilder, workingDirectory, outputHandler);
+                    final String output = outputHandler.getOutput();
+                    final Matcher matcher = GIT_VERSION_PATTERN.matcher(output);
+                    if (!matcher.find())
+                    {
+                        return Option.some(" Exit code: " + exitCode + " Output:\n[" + output + "]");
+                    }
+                    return Option.none();
+                }
+            });
+
+
     /**
      * Checks whether git exist in current system.
      *
@@ -119,19 +148,29 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
      */
     public void checkGitExistenceInSystem(@NotNull final File workingDirectory) throws RepositoryException
     {
-        GitCommandBuilder commandBuilder = createCommandBuilder("version");
-
-        GitStringOutputHandler outputHandler = new GitStringOutputHandler();
-
         try
         {
-            final int exitCode = runCommand(commandBuilder, workingDirectory, outputHandler);
-            String output = outputHandler.getOutput();
-            Matcher matcher = GIT_VERSION_PATTERN.matcher(output);
-            if (!matcher.find())
+            final boolean gitDependsOnWorkingDirectory = gitExecutable.trim().startsWith(".");
+            final Pair<File, GitCommandProcessor> cacheKey = Pair.make(gitDependsOnWorkingDirectory?workingDirectory:new File("/"), this);
+            final Option<String> errorOrNothing;
+            try
             {
-                String errorMessage = "Git Executable capability `" + gitExecutable + "' does not seem to be a git client. Is it properly set?";
-                log.error(errorMessage + " Exit code: " + exitCode + " Output:\n[" + output + "]");
+                errorOrNothing = GIT_EXISTENCE_CHECK_RESULT.get(cacheKey);
+            }
+            catch (ExecutionException e)
+            {
+                final RepositoryException re = Narrow.to(e, RepositoryException.class);
+                if (re!=null)
+                {
+                    throw re;
+                }
+                throw new RepositoryException(e.getCause());
+            }
+            if (!errorOrNothing.isEmpty())
+            {
+                GIT_EXISTENCE_CHECK_RESULT.invalidate(cacheKey);
+                final String errorMessage = "Git Executable capability `" + gitExecutable + "' does not seem to be a git client. Is it properly set? ";
+                log.error(errorMessage + errorOrNothing.get());
                 throw new RepositoryException(errorMessage);
             }
         }
@@ -211,7 +250,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         String destination = revision;
         if (StringUtils.isNotBlank(possibleBranch))
         {
-           destination = possibleBranch;
+            destination = possibleBranch;
         }
         runCheckoutCommandForBranchOrRevision(workingDirectory, destination);
     }
