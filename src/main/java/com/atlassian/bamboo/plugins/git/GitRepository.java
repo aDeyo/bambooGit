@@ -26,7 +26,6 @@ import com.atlassian.bamboo.repository.Repository;
 import com.atlassian.bamboo.repository.RepositoryException;
 import com.atlassian.bamboo.repository.SelectableAuthenticationRepository;
 import com.atlassian.bamboo.security.EncryptionService;
-import com.atlassian.bamboo.ssh.ProxyRegistrationInfo;
 import com.atlassian.bamboo.ssh.SshProxyService;
 import com.atlassian.bamboo.util.TextProviderUtils;
 import com.atlassian.bamboo.utils.SystemProperty;
@@ -61,7 +60,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -114,163 +112,9 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     private static final Logger log = Logger.getLogger(GitRepository.class);
     private BranchIntegrationHelper branchIntegrationHelper;
 
-    public static class GitRepositoryAccessData implements Serializable
-    {
-        protected String repositoryUrl;
-        protected String branch;
-        protected String username;
-        protected String password;
-        protected String sshKey;
-        protected String sshPassphrase;
-        protected GitAuthenticationType authenticationType;
-        protected boolean useShallowClones;
-        protected boolean useSubmodules;
-        protected int commandTimeout;
-        protected boolean verboseLogs;
-
-        transient ProxyRegistrationInfo proxyRegistrationInfo;
-
-        GitRepositoryAccessData cloneAccessData()
-        {
-            GitRepository.GitRepositoryAccessData data = new GitRepositoryAccessData();
-            data.repositoryUrl = this.repositoryUrl;
-            data.branch = this.branch;
-            data.username = this.username;
-            data.password = this.password;
-            data.sshKey = this.sshKey;
-            data.sshPassphrase = this.sshPassphrase;
-            data.authenticationType = this.authenticationType;
-            data.useShallowClones = this.useShallowClones;
-            data.useSubmodules = this.useSubmodules;
-            data.commandTimeout = this.commandTimeout;
-            data.verboseLogs = this.verboseLogs;
-
-            return data;
-        }
-
-        public String getRepositoryUrl()
-        {
-            return repositoryUrl;
-        }
-
-        public void setRepositoryUrl(final String repositoryUrl)
-        {
-            this.repositoryUrl = repositoryUrl;
-        }
-
-        public String getBranch()
-        {
-            return branch;
-        }
-
-        public void setBranch(final String branch)
-        {
-            this.branch = branch;
-        }
-
-        public String getUsername()
-        {
-            return username;
-        }
-
-        public void setUsername(final String username)
-        {
-            this.username = username;
-        }
-
-        public String getPassword()
-        {
-            return password;
-        }
-
-        public void setPassword(final String password)
-        {
-            this.password = password;
-        }
-
-        public String getSshKey()
-        {
-            return sshKey;
-        }
-
-        public void setSshKey(final String sshKey)
-        {
-            this.sshKey = sshKey;
-        }
-
-        public String getSshPassphrase()
-        {
-            return sshPassphrase;
-        }
-
-        public void setSshPassphrase(final String sshPassphrase)
-        {
-            this.sshPassphrase = sshPassphrase;
-        }
-
-        public GitAuthenticationType getAuthenticationType()
-        {
-            return authenticationType;
-        }
-
-        public void setAuthenticationType(final GitAuthenticationType authenticationType)
-        {
-            this.authenticationType = authenticationType;
-        }
-
-        public boolean isUseShallowClones()
-        {
-            return useShallowClones;
-        }
-
-        public void setUseShallowClones(final boolean useShallowClones)
-        {
-            this.useShallowClones = useShallowClones;
-        }
-
-        public boolean isUseSubmodules()
-        {
-            return useSubmodules;
-        }
-
-        public void setUseSubmodules(final boolean useSubmodules)
-        {
-            this.useSubmodules = useSubmodules;
-        }
-
-        public int getCommandTimeout()
-        {
-            return commandTimeout;
-        }
-
-        public void setCommandTimeout(final int commandTimeout)
-        {
-            this.commandTimeout = commandTimeout;
-        }
-
-        public boolean isVerboseLogs()
-        {
-            return verboseLogs;
-        }
-
-        public void setVerboseLogs(final boolean verboseLogs)
-        {
-            this.verboseLogs = verboseLogs;
-        }
-
-        public ProxyRegistrationInfo getProxyRegistrationInfo()
-        {
-            return proxyRegistrationInfo;
-        }
-
-        public void setProxyRegistrationInfo(final ProxyRegistrationInfo proxyRegistrationInfo)
-        {
-            this.proxyRegistrationInfo = proxyRegistrationInfo;
-        }
-    }
     private VcsBranch branch;
 
-    final public GitRepositoryAccessData accessData = new GitRepositoryAccessData();
+    private GitRepositoryAccessData accessData = new GitRepositoryAccessData();
 
     // Maven 2 import
     private transient String pathToPom;
@@ -305,10 +149,10 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
         {
             GitRepository gitRepo = (GitRepository) repository;
             return !new EqualsBuilder()
-                    .append(accessData.repositoryUrl, gitRepo.accessData.repositoryUrl)
-                    .append(accessData.branch, gitRepo.accessData.branch)
-                    .append(accessData.username, gitRepo.accessData.username)
-                    .append(accessData.sshKey, gitRepo.accessData.sshKey)
+                    .append(accessData.getRepositoryUrl(), gitRepo.accessData.getRepositoryUrl())
+                    .append(accessData.getBranch(), gitRepo.accessData.getBranch())
+                    .append(accessData.getUsername(), gitRepo.accessData.getUsername())
+                    .append(accessData.getSshKey(), gitRepo.accessData.getSshKey())
                     .isEquals();
         }
         else
@@ -341,7 +185,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
             final GitOperationHelper helper = GitOperationHelperFactory.createGitOperationHelper(this, substitutedAccessData, sshProxyService, buildLogger, i18nResolver);
 
             final String latestRevision = helper.obtainLatestRevision();
-            final String fetchRevision = customRevision != null ? customRevision : substitutedAccessData.branch;
+            final String fetchRevision = customRevision != null ? customRevision : substitutedAccessData.getBranch();
             final String targetRevision = customRevision != null ? customRevision : latestRevision;
 
             if (latestRevision.equals(lastVcsRevisionKey) && customRevision == null)
@@ -359,7 +203,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                     {
                         public Void call() throws RepositoryException
                         {
-                            boolean doShallowFetch = USE_SHALLOW_CLONES && substitutedAccessData.useShallowClones && !cacheDirectory.isDirectory();
+                            boolean doShallowFetch = USE_SHALLOW_CLONES && substitutedAccessData.isUseShallowClones() && !cacheDirectory.isDirectory();
                             helper.fetch(cacheDirectory, fetchRevision, doShallowFetch);
                             return null;
                         }
@@ -434,15 +278,16 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     {
         try
         {
-            final GitRepositoryAccessData substitutedAccessData = getSubstitutedAccessData();
+            final GitRepositoryAccessData.Builder substitutedAccessDataBuilder = getSubstitutedAccessDataBuilder();
+            final boolean doShallowFetch = USE_SHALLOW_CLONES && accessData.isUseShallowClones() && depth == 1;
+            substitutedAccessDataBuilder.useShallowClones(doShallowFetch);
+            final GitRepositoryAccessData substitutedAccessData = substitutedAccessDataBuilder.build();
+
             final BuildLogger buildLogger = buildLoggerManager.getBuildLogger(buildContext.getPlanResultKey());
             final GitOperationHelper helper = GitOperationHelperFactory.createGitOperationHelper(this, substitutedAccessData, sshProxyService, buildLogger, i18nResolver);
 
-            final boolean doShallowFetch = USE_SHALLOW_CLONES && substitutedAccessData.useShallowClones && depth == 1;
-            substitutedAccessData.useShallowClones = doShallowFetch;
-
             final String targetRevision = vcsRevisionKey != null ? vcsRevisionKey : helper.obtainLatestRevision();
-            final String fetchRevision = substitutedAccessData.branch;
+            final String fetchRevision = substitutedAccessData.getBranch();
             final String previousRevision = helper.getRevisionIfExists(sourceDirectory, Constants.HEAD);
 
             if (isOnLocalAgent())
@@ -556,7 +401,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
         {
             case BRANCH_DETECTION:
                 final GitRepositoryAccessData substitutedAccessData = getSubstitutedAccessData();
-                return new CacheId(this, substitutedAccessData.repositoryUrl, substitutedAccessData.username, substitutedAccessData.sshKey);
+                return new CacheId(this, substitutedAccessData.getRepositoryUrl(), substitutedAccessData.getUsername(), substitutedAccessData.getSshKey());
         }
         return null;
     }
@@ -578,18 +423,20 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     public void setVcsBranch(@NotNull final VcsBranch branch)
     {
         this.branch = branch;
-        this.accessData.branch = branch.getName();
+        this.accessData = GitRepositoryAccessData.builder(accessData).branch(branch.getName()).build();
     }
 
     @Override
     public boolean mergeWorkspaceWith(@NotNull final BuildContext buildContext, @NotNull final File workspaceDir, @NotNull final String targetRevision) throws RepositoryException
     {
         final BuildLogger buildLogger = buildLoggerManager.getBuildLogger(PlanKeys.getPlanKey(buildContext.getPlanKey()));
-        final GitRepositoryAccessData substitutedAccessData = getSubstitutedAccessData();
-        final GitOperationHelper connector = GitOperationHelperFactory.createGitOperationHelper(this, substitutedAccessData, sshProxyService, buildLogger, i18nResolver);
 
         final boolean doShallowFetch = false; //USE_SHALLOW_CLONES && substitutedAccessData.useShallowClones;
-        substitutedAccessData.useShallowClones = doShallowFetch;
+        final GitRepositoryAccessData substitutedAccessData = getSubstitutedAccessDataBuilder().useShallowClones(doShallowFetch).build();
+
+        final GitOperationHelper connector = GitOperationHelperFactory.createGitOperationHelper(this, substitutedAccessData, sshProxyService, buildLogger, i18nResolver);
+
+
 
         final File cacheDirectory = getCacheDirectory(substitutedAccessData);
 
@@ -669,7 +516,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
         {
             public Result<RepositoryException, CommitContext> get()
             {
-                boolean doShallowFetch = USE_SHALLOW_CLONES && substitutedAccessData.useShallowClones && !cacheDirectory.isDirectory();
+                boolean doShallowFetch = USE_SHALLOW_CLONES && substitutedAccessData.isUseShallowClones() && !cacheDirectory.isDirectory();
                 try
                 {
                     helper.fetch(cacheDirectory, targetRevision, doShallowFetch);
@@ -732,19 +579,21 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     public void populateFromConfig(@NotNull HierarchicalConfiguration config)
     {
         super.populateFromConfig(config);
-        accessData.repositoryUrl = StringUtils.trimToEmpty(config.getString(REPOSITORY_GIT_REPOSITORY_URL));
-        accessData.username = config.getString(REPOSITORY_GIT_USERNAME, "");
-        accessData.password = config.getString(REPOSITORY_GIT_PASSWORD);
-        accessData.branch = config.getString(REPOSITORY_GIT_BRANCH, "");
-        branch = new VcsBranchImpl(StringUtils.defaultIfEmpty(accessData.branch, "master"));
-        accessData.sshKey = config.getString(REPOSITORY_GIT_SSH_KEY, "");
-        accessData.sshPassphrase = config.getString(REPOSITORY_GIT_SSH_PASSPHRASE);
-        accessData.authenticationType = safeParseAuthenticationType(config.getString(REPOSITORY_GIT_AUTHENTICATION_TYPE));
-        accessData.useShallowClones = config.getBoolean(REPOSITORY_GIT_USE_SHALLOW_CLONES);
-        accessData.useSubmodules = config.getBoolean(REPOSITORY_GIT_USE_SUBMODULES, false);
-        accessData.commandTimeout = config.getInt(REPOSITORY_GIT_COMMAND_TIMEOUT, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES);
-        accessData.verboseLogs = config.getBoolean(REPOSITORY_GIT_VERBOSE_LOGS, false);
+        accessData = GitRepositoryAccessData.builder()
+                .repositoryUrl(StringUtils.trimToEmpty(config.getString(REPOSITORY_GIT_REPOSITORY_URL)))
+                .username(config.getString(REPOSITORY_GIT_USERNAME, ""))
+                .password(config.getString(REPOSITORY_GIT_PASSWORD))
+                .branch(config.getString(REPOSITORY_GIT_BRANCH, ""))
+                .sshKey(config.getString(REPOSITORY_GIT_SSH_KEY, ""))
+                .sshPassphrase(config.getString(REPOSITORY_GIT_SSH_PASSPHRASE))
+                .authenticationType(safeParseAuthenticationType(config.getString(REPOSITORY_GIT_AUTHENTICATION_TYPE)))
+                .useShallowClones(config.getBoolean(REPOSITORY_GIT_USE_SHALLOW_CLONES))
+                .useSubmodules(config.getBoolean(REPOSITORY_GIT_USE_SUBMODULES, false))
+                .commandTimeout(config.getInt(REPOSITORY_GIT_COMMAND_TIMEOUT, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES))
+                .verboseLogs(config.getBoolean(REPOSITORY_GIT_VERBOSE_LOGS, false))
+                .build();
 
+        branch = new VcsBranchImpl(StringUtils.defaultIfEmpty(accessData.getBranch(), "master"));
         pathToPom = config.getString(REPOSITORY_GIT_MAVEN_PATH);
     }
 
@@ -753,17 +602,17 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     public HierarchicalConfiguration toConfiguration()
     {
         HierarchicalConfiguration configuration = super.toConfiguration();
-        configuration.setProperty(REPOSITORY_GIT_REPOSITORY_URL, accessData.repositoryUrl);
-        configuration.setProperty(REPOSITORY_GIT_USERNAME, accessData.username);
-        configuration.setProperty(REPOSITORY_GIT_PASSWORD, accessData.password);
-        configuration.setProperty(REPOSITORY_GIT_BRANCH, accessData.branch);
-        configuration.setProperty(REPOSITORY_GIT_SSH_KEY, accessData.sshKey);
-        configuration.setProperty(REPOSITORY_GIT_SSH_PASSPHRASE, accessData.sshPassphrase);
-        configuration.setProperty(REPOSITORY_GIT_AUTHENTICATION_TYPE, accessData.authenticationType != null ? accessData.authenticationType.name() : null);
-        configuration.setProperty(REPOSITORY_GIT_USE_SHALLOW_CLONES, accessData.useShallowClones);
-        configuration.setProperty(REPOSITORY_GIT_USE_SUBMODULES, accessData.useSubmodules);
-        configuration.setProperty(REPOSITORY_GIT_COMMAND_TIMEOUT, accessData.commandTimeout);
-        configuration.setProperty(REPOSITORY_GIT_VERBOSE_LOGS, accessData.verboseLogs);
+        configuration.setProperty(REPOSITORY_GIT_REPOSITORY_URL, accessData.getRepositoryUrl());
+        configuration.setProperty(REPOSITORY_GIT_USERNAME, accessData.getUsername());
+        configuration.setProperty(REPOSITORY_GIT_PASSWORD, accessData.getPassword());
+        configuration.setProperty(REPOSITORY_GIT_BRANCH, accessData.getBranch());
+        configuration.setProperty(REPOSITORY_GIT_SSH_KEY, accessData.getSshKey());
+        configuration.setProperty(REPOSITORY_GIT_SSH_PASSPHRASE, accessData.getSshPassphrase());
+        configuration.setProperty(REPOSITORY_GIT_AUTHENTICATION_TYPE, accessData.getAuthenticationTypeString());
+        configuration.setProperty(REPOSITORY_GIT_USE_SHALLOW_CLONES, accessData.isUseShallowClones());
+        configuration.setProperty(REPOSITORY_GIT_USE_SUBMODULES, accessData.isUseSubmodules());
+        configuration.setProperty(REPOSITORY_GIT_COMMAND_TIMEOUT, accessData.getCommandTimeout());
+        configuration.setProperty(REPOSITORY_GIT_VERBOSE_LOGS, accessData.isVerboseLogs());
         return configuration;
     }
 
@@ -843,9 +692,9 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     public Map<String, String> getCustomVariables()
     {
         Map<String, String> variables = Maps.newHashMap();
-        variables.put(REPOSITORY_GIT_REPOSITORY_URL, accessData.repositoryUrl);
-        variables.put(REPOSITORY_GIT_BRANCH, accessData.branch);
-        variables.put(REPOSITORY_GIT_USERNAME, accessData.username);
+        variables.put(REPOSITORY_GIT_REPOSITORY_URL, accessData.getRepositoryUrl());
+        variables.put(REPOSITORY_GIT_BRANCH, accessData.getBranch());
+        variables.put(REPOSITORY_GIT_USERNAME, accessData.getUsername());
         return variables;
     }
 
@@ -870,7 +719,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
 
     public String getAuthType()
     {
-        return accessData.authenticationType != null ? accessData.authenticationType.name() : defaultAuthenticationType.name();
+        return accessData.getAuthenticationTypeString();
     }
 
     // -------------------------------------------------------------------------------------------------- Public Methods
@@ -898,21 +747,20 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
         return i18nResolver.getText("repository.git.authenticationType." + StringUtils.lowerCase(authType));
     }
 
+    GitRepositoryAccessData.Builder getSubstitutedAccessDataBuilder()
+    {
+        return GitRepositoryAccessData.builder(accessData)
+                .repositoryUrl(substituteString(accessData.getRepositoryUrl()))
+                .branch(substituteString(accessData.getBranch()))
+                .username(substituteString(accessData.getUsername()))
+                .password(encryptionService.decrypt(accessData.getPassword()))
+                .sshKey(encryptionService.decrypt(accessData.getSshKey()))
+                .sshPassphrase(encryptionService.decrypt(accessData.getSshPassphrase()));
+    }
+
     GitRepositoryAccessData getSubstitutedAccessData()
     {
-        GitRepositoryAccessData substituted = new GitRepositoryAccessData();
-        substituted.repositoryUrl = substituteString(accessData.repositoryUrl);
-        substituted.branch = substituteString(accessData.branch);
-        substituted.username = substituteString(accessData.username);
-        substituted.password = encryptionService.decrypt(accessData.password);
-        substituted.sshKey = encryptionService.decrypt(accessData.sshKey);
-        substituted.sshPassphrase = encryptionService.decrypt(accessData.sshPassphrase);
-        substituted.authenticationType = accessData.authenticationType;
-        substituted.useShallowClones = accessData.useShallowClones;
-        substituted.useSubmodules = accessData.useSubmodules;
-        substituted.commandTimeout = accessData.commandTimeout;
-        substituted.verboseLogs = accessData.verboseLogs;
-        return substituted;
+        return getSubstitutedAccessDataBuilder().build();
     }
 
     private void rethrowOrRemoveDirectory(final Exception originalException, final BuildLogger buildLogger, final File directory, final String key) throws Exception
@@ -945,17 +793,17 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
 
     public boolean isUseShallowClones()
     {
-        return accessData.useShallowClones;
+        return accessData.isUseShallowClones();
     }
 
     public boolean isUseSubmodules()
     {
-        return accessData.useSubmodules;
+        return accessData.isUseSubmodules();
     }
 
     public String getRepositoryUrl()
     {
-        return accessData.repositoryUrl;
+        return accessData.getRepositoryUrl();
     }
 
     /**
@@ -965,17 +813,17 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     @Deprecated
     public String getBranch()
     {
-        return accessData.branch;
+        return accessData.getBranch();
     }
 
     public int getCommandTimeout()
     {
-        return accessData.commandTimeout;
+        return accessData.getCommandTimeout();
     }
 
     public boolean getVerboseLogs()
     {
-        return accessData.verboseLogs;
+        return accessData.isVerboseLogs();
     }
 
     public String getAuthTypeName()
@@ -1044,5 +892,13 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
         this.branchIntegrationHelper = branchIntegrationHelper;
     }
 
+    public GitRepositoryAccessData getAccessData()
+    {
+        return accessData;
+    }
 
+    public void setAccessData(final GitRepositoryAccessData accessData)
+    {
+        this.accessData = accessData;
+    }
 }

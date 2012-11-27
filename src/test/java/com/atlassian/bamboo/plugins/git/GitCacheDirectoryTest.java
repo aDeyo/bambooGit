@@ -55,10 +55,10 @@ public class GitCacheDirectoryTest extends GitAbstractTest
 
     private void doTestFieldInfluenceOnCacheLocaton(String field, boolean shallow, boolean different) throws Exception
     {
-        GitRepository.GitRepositoryAccessData accessData = createSampleAccessData(shallow);
-        GitRepository.GitRepositoryAccessData accessData2 = createSampleAccessData(shallow);
+        GitRepositoryAccessData accessData = createSampleAccessData(shallow);
+        GitRepositoryAccessData accessData2 = createSampleAccessData(shallow);
 
-        Field f = GitRepository.GitRepositoryAccessData.class.getDeclaredField(field);
+        Field f = GitRepositoryAccessData.class.getDeclaredField(field);
         String val = (String) f.get(accessData2);
         f.set(accessData2, val + "chg");
 
@@ -72,8 +72,8 @@ public class GitCacheDirectoryTest extends GitAbstractTest
     @Test
     public void testShallowGetsDifferentCache() throws Exception
     {
-        GitRepository.GitRepositoryAccessData accessData = createSampleAccessData(false);
-        GitRepository.GitRepositoryAccessData accessData2 = createSampleAccessData(true);
+        GitRepositoryAccessData accessData = createSampleAccessData(false);
+        GitRepositoryAccessData accessData2 = createSampleAccessData(true);
 
         File baseDir = createTempDirectory();
         File cache1 = GitCacheDirectory.getCacheDirectory(baseDir, accessData);
@@ -86,11 +86,11 @@ public class GitCacheDirectoryTest extends GitAbstractTest
     @Test
     public void testShallowGetsDifferentCacheWithEmptyBranch() throws Exception
     {
-        GitRepository.GitRepositoryAccessData accessDataNonShallow = createSampleAccessData(false);
-        GitRepository.GitRepositoryAccessData accessDataShallow = createSampleAccessData(true);
+        GitRepositoryAccessData accessDataNonShallow = createSampleAccessData(false);
+        GitRepositoryAccessData accessDataShallow = createSampleAccessData(true);
 
-        accessDataNonShallow.branch = "";
-        accessDataShallow.branch = "";
+        accessDataNonShallow = GitRepositoryAccessData.builder(accessDataNonShallow).branch("").build();
+        accessDataShallow = GitRepositoryAccessData.builder(accessDataShallow).branch("").build();
 
         File baseDir = createTempDirectory();
         File cache1 = GitCacheDirectory.getCacheDirectory(baseDir, accessDataNonShallow);
@@ -100,9 +100,9 @@ public class GitCacheDirectoryTest extends GitAbstractTest
 
     }
 
-    private static GitRepository.GitRepositoryAccessData createSampleAccessData(boolean shallow)
+    private static GitRepositoryAccessData createSampleAccessData(boolean shallow)
     {
-        GitRepository.GitRepositoryAccessData accessData = createAccessData(
+        GitRepositoryAccessData accessData = createAccessData(
                 "someUrl",
                 "branch",
                 "username",
@@ -110,8 +110,7 @@ public class GitCacheDirectoryTest extends GitAbstractTest
                 "sshKey",
                 "sshPass"
         );
-        accessData.useShallowClones = shallow;
-        return accessData;
+        return GitRepositoryAccessData.builder(accessData).useShallowClones(shallow).build();
     }
 
     @Test(timeOut = 5000)

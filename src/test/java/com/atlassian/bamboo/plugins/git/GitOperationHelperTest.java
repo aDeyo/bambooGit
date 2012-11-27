@@ -365,7 +365,7 @@ public class GitOperationHelperTest extends GitAbstractTest
     public void testOpenConnectionUsesCustomizedTransport(String url, boolean expectCustomized) throws Exception
     {
         JGitOperationHelper goh = createJGitOperationHelper(null);
-        GitRepository.GitRepositoryAccessData accessData = createAccessData(url);
+        GitRepositoryAccessData accessData = createAccessData(url);
         FileRepository fileRepository = new FileRepository(createTempDirectory());
         Transport transport = goh.open(fileRepository, accessData);
 

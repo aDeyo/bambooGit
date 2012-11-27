@@ -200,17 +200,19 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
         commandTimeout = config.getInt(REPOSITORY_GITHUB_COMMAND_TIMEOUT, GitRepository.DEFAULT_COMMAND_TIMEOUT_IN_MINUTES);
         verboseLogs = config.getBoolean(REPOSITORY_GITHUB_VERBOSE_LOGS, false);
 
-        gitRepository.accessData.repositoryUrl = "https://github.com/" + repository + ".git";
-        gitRepository.accessData.username = username;
-        gitRepository.accessData.password = password;
-        gitRepository.accessData.branch = branch;
-        gitRepository.accessData.sshKey = "";
-        gitRepository.accessData.sshPassphrase = "";
-        gitRepository.accessData.authenticationType = GitAuthenticationType.PASSWORD;
-        gitRepository.accessData.useShallowClones = useShallowClones;
-        gitRepository.accessData.useSubmodules = useSubmodules;
-        gitRepository.accessData.commandTimeout = commandTimeout;
-        gitRepository.accessData.verboseLogs = verboseLogs;
+        gitRepository.setAccessData(GitRepositoryAccessData.builder(gitRepository.getAccessData())
+                                            .repositoryUrl("https://github.com/" + repository + ".git")
+                                            .username(username)
+                                            .password(password)
+                                            .branch(branch)
+                                            .sshKey("")
+                                            .sshPassphrase("")
+                                            .authenticationType(GitAuthenticationType.PASSWORD)
+                                            .useShallowClones(useShallowClones)
+                                            .useSubmodules(useSubmodules)
+                                            .commandTimeout(commandTimeout)
+                                            .verboseLogs(verboseLogs)
+                                            .build());
 
         gitRepository.setVcsBranch(new VcsBranchImpl(branch));
     }
@@ -356,7 +358,7 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
         switch (cachableOperation)
         {
             case BRANCH_DETECTION:
-                return new CacheId(this, gitRepository.accessData.repositoryUrl);
+                return new CacheId(this, gitRepository.getAccessData().getRepositoryUrl());
         }
         return null;
     }

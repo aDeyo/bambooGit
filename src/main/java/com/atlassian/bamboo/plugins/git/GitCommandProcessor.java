@@ -202,9 +202,9 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         return gitOutputHandler.getLines();
     }
 
-    public void runFetchCommand(@NotNull final File workingDirectory, @NotNull final GitRepository.GitRepositoryAccessData accessData, String refSpec, boolean useShallow) throws RepositoryException
+    public void runFetchCommand(@NotNull final File workingDirectory, @NotNull final GitRepositoryAccessData accessData, String refSpec, boolean useShallow) throws RepositoryException
     {
-        GitCommandBuilder commandBuilder = createCommandBuilder("fetch", accessData.repositoryUrl, refSpec, "--update-head-ok");
+        GitCommandBuilder commandBuilder = createCommandBuilder("fetch", accessData.getRepositoryUrl(), refSpec, "--update-head-ok");
         if (useShallow)
         {
             commandBuilder.shallowClone();
@@ -215,7 +215,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
             //directory has shallows: we need to make it deep
             commandBuilder.append("--depth=99999999");
         }
-        if (accessData.verboseLogs)
+        if (accessData.isVerboseLogs())
         {
             commandBuilder.verbose(true);
             commandBuilder.append("--progress");
@@ -309,10 +309,10 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
     }
 
     @NotNull
-    public Map<String, String> getRemoteRefs(File workingDirectory, GitRepository.GitRepositoryAccessData accessData) throws RepositoryException
+    public Map<String, String> getRemoteRefs(File workingDirectory, GitRepositoryAccessData accessData) throws RepositoryException
     {
         final LineOutputHandlerImpl goh = new LineOutputHandlerImpl();
-        final GitCommandBuilder commandBuilder = createCommandBuilder("ls-remote", accessData.repositoryUrl);
+        final GitCommandBuilder commandBuilder = createCommandBuilder("ls-remote", accessData.getRepositoryUrl());
         runCommand(commandBuilder, workingDirectory, goh);
         final Map<String, String> result = parseLsRemoteOutput(goh);
         return result;

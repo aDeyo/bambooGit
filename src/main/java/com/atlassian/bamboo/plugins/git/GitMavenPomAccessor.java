@@ -66,7 +66,7 @@ public class GitMavenPomAccessor extends MavenPomAccessorAbstract<GitRepository>
 
     public void parseMavenScmUrl(@NotNull String mavenScmUrl) throws IllegalArgumentException
     {
-        repository.accessData.repositoryUrl = mavenScmUrl;
+        repository.setAccessData(GitRepositoryAccessData.builder(repository.getAccessData()).repositoryUrl(mavenScmUrl).build());
     }
 
     @NotNull

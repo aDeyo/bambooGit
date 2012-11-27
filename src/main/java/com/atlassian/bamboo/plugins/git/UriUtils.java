@@ -66,12 +66,12 @@ public class UriUtils
         return scheme != -1;
     }
 
-    public static URI getUriViaProxy(GitRepository.GitRepositoryAccessData proxyAccessData, ScpAwareUri repositoryUri) throws URISyntaxException
+    public static URI getUriViaProxy(GitRepositoryAccessData proxyAccessData, ScpAwareUri repositoryUri) throws URISyntaxException
     {
         return new URI(repositoryUri.getScheme(),
-                proxyAccessData.proxyRegistrationInfo.getProxyUserName(),
-                proxyAccessData.proxyRegistrationInfo.getProxyHost(),
-                proxyAccessData.proxyRegistrationInfo.getProxyPort(),
+                proxyAccessData.getProxyRegistrationInfo().getProxyUserName(),
+                proxyAccessData.getProxyRegistrationInfo().getProxyHost(),
+                proxyAccessData.getProxyRegistrationInfo().getProxyPort(),
                 repositoryUri.getAbsolutePath(),
                 repositoryUri.getRawQuery(),
                 repositoryUri.getRawFragment());

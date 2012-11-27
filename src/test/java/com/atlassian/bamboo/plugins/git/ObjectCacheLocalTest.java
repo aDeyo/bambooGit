@@ -94,7 +94,7 @@ public class ObjectCacheLocalTest extends GitAbstractTest
         private File cacheDir;
         private String lastRevision;
         private String lastContents;
-        private GitRepository.GitRepositoryAccessData accessData;
+        private GitRepositoryAccessData accessData;
         private File sourceRepositoryDir;
         private Git srcGit;
         private File srcFile;

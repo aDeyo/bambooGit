@@ -17,7 +17,7 @@ import static org.junit.Assert.assertTrue;
 
 public class UriUtilsTest
 {
-    static GitRepository.GitRepositoryAccessData proxyAccessData = new GitRepository.GitRepositoryAccessData();
+    static GitRepositoryAccessData proxyAccessData = new GitRepositoryAccessData();
     private final static ImmutableList<String> FILE_URLS = ImmutableList.of(
             "host", "host/path", "user@host/path", "user@host",
             "/host", "/host/path", "/user@host/path", "/user@host",
@@ -50,7 +50,7 @@ public class UriUtilsTest
     @BeforeClass
     public static void setup()
     {
-        proxyAccessData.proxyRegistrationInfo = new ProxyRegistrationInfoImpl("proxyHost", 22, null, "proxyUserName");
+        proxyAccessData.setProxyRegistrationInfo(new ProxyRegistrationInfoImpl("proxyHost", 22, null, "proxyUserName"));
     }
 
     @Test

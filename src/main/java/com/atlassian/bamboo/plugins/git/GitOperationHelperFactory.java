@@ -15,7 +15,7 @@ public class GitOperationHelperFactory
     }
 
     public static GitOperationHelper createGitOperationHelper(final @NotNull GitRepository repository,
-                                                              final @NotNull GitRepository.GitRepositoryAccessData accessData,
+                                                              final @NotNull GitRepositoryAccessData accessData,
                                                               final @NotNull SshProxyService sshProxyService,
                                                               final @NotNull BuildLogger buildLogger,
                                                               final @NotNull I18nResolver i18nResolver) throws RepositoryException

@@ -72,7 +72,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
     // ---------------------------------------------------------------------------------------------------- Dependencies
     // ---------------------------------------------------------------------------------------------------- Constructors
 
-    public JGitOperationHelper(final GitRepository.GitRepositoryAccessData accessData, final @NotNull BuildLogger buildLogger,
+    public JGitOperationHelper(final GitRepositoryAccessData accessData, final @NotNull BuildLogger buildLogger,
                                final @NotNull I18nResolver i18nResolver)
     {
         super(accessData, buildLogger, i18nResolver);
@@ -146,7 +146,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
                     @Override
                     public String doWithTransport(@NotNull Transport transport) throws Exception
                     {
-                        return getRefSpecForName(transport, accessData.branch);
+                        return getRefSpecForName(transport, accessData.getBranch());
                     }
                 });
             } catch (Exception e)
@@ -222,7 +222,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
                     @Override
                     public Void doWithFetchConnection(@NotNull Transport transport, @NotNull FetchConnection connection) throws IOException
                     {
-                        final String resolvedBranch = resolveRefSpec(accessData.branch, connection).getName();
+                        final String resolvedBranch = resolveRefSpec(accessData.getBranch(), connection).getName();
 
                         RefSpec refSpec = new RefSpec()
                                 .setForceUpdate(true)
@@ -269,7 +269,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
                 File lck = new File(localRepository.getIndexFile().getParentFile(), localRepository.getIndexFile().getName() + ".lock");
                 FileUtils.deleteQuietly(lck);
 
-                return doCheckout(localRepository, targetRevision, previousRevision, accessData.useSubmodules);
+                return doCheckout(localRepository, targetRevision, previousRevision, accessData.isUseSubmodules());
             }
             finally
             {
@@ -299,7 +299,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
                         final String resolvedRefSpec = getRefSpecForName(transport, targetRevision);
                         refSpecDescription.set(resolvedRefSpec);
 
-                        buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.fetching", resolvedRefSpec, accessData.repositoryUrl)
+                        buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.fetching", resolvedRefSpec, accessData.getRepositoryUrl())
                                                      + (useShallow ? " " + i18nResolver.getText("repository.git.messages.doingShallowFetch") : ""));
                         RefSpec refSpec = new RefSpec()
                                 .setForceUpdate(true)
@@ -314,7 +314,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
                         }
                         catch (IOException e)
                         {
-                            String message = i18nResolver.getText("repository.git.messages.fetchingFailed", accessData.repositoryUrl, refSpecDescription.get(), sourceDirectory);
+                            String message = i18nResolver.getText("repository.git.messages.fetchingFailed", accessData.getRepositoryUrl(), refSpecDescription.get(), sourceDirectory);
                             throw new RepositoryException(buildLogger.addErrorLogEntry(message + " " + e.getMessage()), e);
                         }
                         finally
@@ -338,7 +338,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
         }
         catch (Exception e)
         {
-            String message = TextProviderUtils.getText(i18nResolver, "repository.git.messages.fetchingFailed", accessData.repositoryUrl, refSpecDescription.get(), sourceDirectory.getAbsolutePath());
+            String message = TextProviderUtils.getText(i18nResolver, "repository.git.messages.fetchingFailed", accessData.getRepositoryUrl(), refSpecDescription.get(), sourceDirectory.getAbsolutePath());
             throw new RepositoryException(buildLogger.addErrorLogEntry(message + " " + e.getMessage()), e);
         }
     }
@@ -406,10 +406,10 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
                 @Override
                 public String doWithFetchConnection(@NotNull Transport transport, @NotNull FetchConnection connection) throws RepositoryException
                 {
-                    Ref headRef = resolveRefSpec(accessData.branch, connection);
+                    Ref headRef = resolveRefSpec(accessData.getBranch(), connection);
                     if (headRef == null)
                     {
-                        throw new InvalidRepositoryException(i18nResolver.getText("repository.git.messages.cannotDetermineHead", accessData.repositoryUrl, accessData.branch));
+                        throw new InvalidRepositoryException(i18nResolver.getText("repository.git.messages.cannotDetermineHead", accessData.getRepositoryUrl(), accessData.getBranch()));
                     }
                     else
                     {
@@ -420,7 +420,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
         }
         catch (NotSupportedException e)
         {
-            throw new RepositoryException(buildLogger.addErrorLogEntry(i18nResolver.getText("repository.git.messages.protocolUnsupported", accessData.repositoryUrl)), e);
+            throw new RepositoryException(buildLogger.addErrorLogEntry(i18nResolver.getText("repository.git.messages.protocolUnsupported", accessData.getRepositoryUrl())), e);
         }
         catch (TransportException e)
         {
@@ -434,7 +434,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
 
     @Override
     @NotNull
-    public List<VcsBranch> getOpenBranches(@NotNull final GitRepository.GitRepositoryAccessData repositoryData, final File workingDir) throws RepositoryException
+    public List<VcsBranch> getOpenBranches(@NotNull final GitRepositoryAccessData repositoryData, final File workingDir) throws RepositoryException
     {
         try
         {
@@ -457,7 +457,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
         }
         catch (NotSupportedException e)
         {
-            throw new RepositoryException(i18nResolver.getText("repository.git.messages.protocolUnsupported", repositoryData.repositoryUrl), e);
+            throw new RepositoryException(i18nResolver.getText("repository.git.messages.protocolUnsupported", repositoryData.getRepositoryUrl()), e);
         }
         catch (TransportException e)
         {
@@ -711,7 +711,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
     }
 
     /**
-     * Should not be called directly but rather via {@link #withTransport(FileRepository, GitRepository.GitRepositoryAccessData, JGitOperationHelper.WithTransportCallback)}
+     * Should not be called directly but rather via {@link #withTransport(FileRepository, GitRepositoryAccessData, JGitOperationHelper.WithTransportCallback)}
      *
      * @param localRepository
      * @param accessData
@@ -719,15 +719,15 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
      * @throws RepositoryException
      */
     @NotNull
-    Transport open(@NotNull final FileRepository localRepository, @NotNull final GitRepository.GitRepositoryAccessData accessData) throws RepositoryException
+    Transport open(@NotNull final FileRepository localRepository, @NotNull final GitRepositoryAccessData accessData) throws RepositoryException
     {
         try
         {
-            URIish uri = new URIish(accessData.repositoryUrl);
-            if ("ssh".equals(uri.getScheme()) && accessData.authenticationType == GitAuthenticationType.PASSWORD
-                && StringUtils.isBlank(uri.getUser()) && StringUtils.isNotBlank(accessData.username))
+            URIish uri = new URIish(accessData.getRepositoryUrl());
+            if ("ssh".equals(uri.getScheme()) && accessData.getAuthenticationType() == GitAuthenticationType.PASSWORD
+                && StringUtils.isBlank(uri.getUser()) && StringUtils.isNotBlank(accessData.getUsername()))
             {
-                uri = uri.setUser(accessData.username);
+                uri = uri.setUser(accessData.getUsername());
             }
             // transport should be opened using factory method at least first time to properly initialize all transports
             // for non http/https this is absolutely the same way as usual, for http/https as we use own modified transports
@@ -753,10 +753,10 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
             transport.setTimeout(DEFAULT_TRANSFER_TIMEOUT);
             if (transport instanceof SshTransport)
             {
-                final boolean useKey = accessData.authenticationType == GitAuthenticationType.SSH_KEYPAIR;
+                final boolean useKey = accessData.getAuthenticationType() == GitAuthenticationType.SSH_KEYPAIR;
 
-                final String sshKey = useKey ? accessData.sshKey : null;
-                final String passphrase = useKey ? accessData.sshPassphrase : null;
+                final String sshKey = useKey ? accessData.getSshKey() : null;
+                final String passphrase = useKey ? accessData.getSshPassphrase() : null;
 
                 SshSessionFactory factory = new GitSshSessionFactory(sshKey, passphrase);
                 ((SshTransport)transport).setSshSessionFactory(factory);
@@ -765,20 +765,20 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
                     transport.setCredentialsProvider(new TweakedUsernamePasswordCredentialsProvider("dummy", passphrase));
                 }
             }
-            if (accessData.authenticationType == GitAuthenticationType.PASSWORD)
+            if (accessData.getAuthenticationType() == GitAuthenticationType.PASSWORD)
             {
                 // username may be specified in the URL instead of in the text field, we may still need the password if it's set
-                transport.setCredentialsProvider(new TweakedUsernamePasswordCredentialsProvider(accessData.username, accessData.password));
+                transport.setCredentialsProvider(new TweakedUsernamePasswordCredentialsProvider(accessData.getUsername(), accessData.getPassword()));
             }
             return transport;
         }
         catch (URISyntaxException e)
         {
-            throw new RepositoryException(buildLogger.addErrorLogEntry(i18nResolver.getText("repository.git.messages.invalidURI", accessData.repositoryUrl)), e);
+            throw new RepositoryException(buildLogger.addErrorLogEntry(i18nResolver.getText("repository.git.messages.invalidURI", accessData.getRepositoryUrl())), e);
         }
         catch (IOException e)
         {
-            throw new RepositoryException(buildLogger.addErrorLogEntry(i18nResolver.getText("repository.git.messages.failedToOpenTransport", accessData.repositoryUrl)), e);
+            throw new RepositoryException(buildLogger.addErrorLogEntry(i18nResolver.getText("repository.git.messages.failedToOpenTransport", accessData.getRepositoryUrl())), e);
         }
     }
 
@@ -808,7 +808,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
         }
         catch (IOException e)
         {
-            throw new RepositoryException("Getting commit "+ targetRevision + " from " + accessData.repositoryUrl + " failed", e);
+            throw new RepositoryException("Getting commit "+ targetRevision + " from " + accessData.getRepositoryUrl() + " failed", e);
         }
         finally
         {
@@ -833,7 +833,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
 
     @Nullable
     protected <E extends java.lang.Throwable, T> T withTransport(@NotNull FileRepository repository,
-                                                                 @NotNull final GitRepository.GitRepositoryAccessData accessData,
+                                                                 @NotNull final GitRepositoryAccessData accessData,
                                                                  @NotNull WithTransportCallback<E, T> callback) throws E, RepositoryException
     {
         final Transport transport = open(repository, accessData);
@@ -867,7 +867,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
     }
 
     protected <E extends java.lang.Throwable, T> T withFetchConnection(@NotNull final FileRepository repository,
-                                                                       @NotNull final GitRepository.GitRepositoryAccessData accessData,
+                                                                       @NotNull final GitRepositoryAccessData accessData,
                                                                        @NotNull final WithFetchConnectionCallback<E, T> callback) throws E, RepositoryException, NotSupportedException, TransportException
     {
         final Transport transport = open(repository, accessData);

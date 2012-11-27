@@ -16,13 +16,13 @@ public abstract class AbstractGitOperationHelper implements GitOperationHelper
 
     protected static final String[] FQREF_PREFIXES = {Constants.R_HEADS, Constants.R_REFS};
 
-    protected final GitRepository.GitRepositoryAccessData accessData;
+    protected final GitRepositoryAccessData accessData;
     // ------------------------------------------------------------------------------------------------- Type Properties
     // ---------------------------------------------------------------------------------------------------- Dependencies
     protected final BuildLogger buildLogger;
     protected final I18nResolver i18nResolver;
 
-    public AbstractGitOperationHelper(final GitRepository.GitRepositoryAccessData accessData,
+    public AbstractGitOperationHelper(final GitRepositoryAccessData accessData,
                                       final @NotNull BuildLogger buildLogger,
                                       final @NotNull I18nResolver i18nResolver)
     {

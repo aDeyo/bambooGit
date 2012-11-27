@@ -51,14 +51,15 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
     // ---------------------------------------------------------------------------------------------------- Constructors
 
     public NativeGitOperationHelper(final @NotNull GitRepository repository,
-                                    final @NotNull GitRepository.GitRepositoryAccessData accessData,
+                                    final @NotNull GitRepositoryAccessData accessData,
                                     final @NotNull SshProxyService sshProxyService,
                                     final @NotNull BuildLogger buildLogger,
                                     final @NotNull I18nResolver i18nResolver) throws RepositoryException
     {
         super(accessData, buildLogger, i18nResolver);
         this.sshProxyService = sshProxyService;
-        this.gitCommandProcessor = new GitCommandProcessor(repository.getGitCapability(), buildLogger, accessData.password, accessData.commandTimeout, accessData.verboseLogs);
+        this.gitCommandProcessor = new GitCommandProcessor(repository.getGitCapability(), buildLogger, accessData.getPassword(),
+                                                           accessData.getCommandTimeout(), accessData.isVerboseLogs());
         this.gitCommandProcessor.checkGitExistenceInSystem(repository.getWorkingDirectory());
         this.gitCommandProcessor.setSshCommand(repository.getSshCapability());
     }
@@ -68,14 +69,14 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
     @Override
     public void pushRevision(@NotNull final File sourceDirectory, @NotNull String revision) throws RepositoryException
     {
-        String possibleBranch = gitCommandProcessor.getPossibleBranchNameForCheckout(sourceDirectory, revision, accessData.branch);
+        String possibleBranch = gitCommandProcessor.getPossibleBranchNameForCheckout(sourceDirectory, revision, accessData.getBranch());
         if (StringUtils.isBlank(possibleBranch))
         {
             throw new RepositoryException("Can't guess branch name for revision " + revision + " when trying to perform push.");
         }
-        final GitRepository.GitRepositoryAccessData proxiedAccessData = adjustRepositoryAccess(accessData);
-        GitCommandBuilder commandBuilder = gitCommandProcessor.createCommandBuilder("push", proxiedAccessData.repositoryUrl, possibleBranch);
-        if (proxiedAccessData.verboseLogs)
+        final GitRepositoryAccessData proxiedAccessData = adjustRepositoryAccess(accessData);
+        GitCommandBuilder commandBuilder = gitCommandProcessor.createCommandBuilder("push", proxiedAccessData.getRepositoryUrl(), possibleBranch);
+        if (proxiedAccessData.isVerboseLogs())
         {
             commandBuilder.verbose(true);
         }
@@ -95,7 +96,7 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
                 .createCommandBuilder("commit", "--all", "-m", message)
                 .env(identificationVariables(comitterName, comitterEmail));
 
-        if (accessData.verboseLogs)
+        if (accessData.isVerboseLogs())
         {
             commandBuilder.verbose(true);
         }
@@ -116,32 +117,33 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
     // -------------------------------------------------------------------------------------------------- Public Methods
     // -------------------------------------------------------------------------------------- Basic Accessors / Mutators
 
-    protected GitRepository.GitRepositoryAccessData adjustRepositoryAccess(@NotNull final GitRepository.GitRepositoryAccessData accessData) throws RepositoryException
+    protected GitRepositoryAccessData adjustRepositoryAccess(@NotNull final GitRepositoryAccessData accessData) throws RepositoryException
     {
-        final boolean sshKeypair = accessData.authenticationType == GitAuthenticationType.SSH_KEYPAIR;
-        final boolean sshWithPassword = UriUtils.requiresSshTransport(accessData.repositoryUrl) && accessData.authenticationType == GitAuthenticationType.PASSWORD;
+        final boolean sshKeypair = accessData.getAuthenticationType() == GitAuthenticationType.SSH_KEYPAIR;
+        final boolean sshWithPassword = UriUtils.requiresSshTransport(accessData.getRepositoryUrl()) && accessData.getAuthenticationType() == GitAuthenticationType.PASSWORD;
         final boolean needsProxy = sshKeypair || sshWithPassword;
         if (needsProxy)
         {
-            final GitRepository.GitRepositoryAccessData proxyAccessData = accessData.cloneAccessData();
+            final GitRepositoryAccessData.Builder proxyAccessDataBuilder = GitRepositoryAccessData.builder(accessData);
+            GitRepositoryAccessData proxyAccessData = proxyAccessDataBuilder.build();
 
-            ScpAwareUri repositoryUri = ScpAwareUri.create(proxyAccessData.repositoryUrl);
+            ScpAwareUri repositoryUri = ScpAwareUri.create(accessData.getRepositoryUrl());
 
             if (UriUtils.requiresSshTransport(repositoryUri))
             {
                 try
                 {
-                    String username = UriUtils.extractUsername(proxyAccessData.repositoryUrl);
+                    String username = UriUtils.extractUsername(accessData.getRepositoryUrl());
                     if (username != null)
                     {
-                        proxyAccessData.username = username;
+                        proxyAccessData.setUsername(username);
                     }
 
                     final ProxyConnectionDataBuilder proxyConnectionDataBuilder =
                             sshProxyService.createProxyConnectionDataBuilder()
                                     .withRemoteHost(repositoryUri.getHost())
                                     .withRemotePort(repositoryUri.getPort() == -1 ? null : repositoryUri.getPort())
-                                    .withRemoteUserName(StringUtils.defaultIfEmpty(proxyAccessData.username, repositoryUri.getUserInfo()))
+                                    .withRemoteUserName(StringUtils.defaultIfEmpty(proxyAccessData.getUsername(), repositoryUri.getUserInfo()))
                                     .withErrorReceiver(gitCommandProcessor);
 
                     if (repositoryUri.isRelativePath())
@@ -149,25 +151,23 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
                         proxyConnectionDataBuilder.withRemotePathMapping(repositoryUri.getAbsolutePath(), repositoryUri.getRawPath());
                     }
 
-                    switch (accessData.authenticationType)
+                    switch (accessData.getAuthenticationType())
                     {
                         case SSH_KEYPAIR:
-                            proxyConnectionDataBuilder.withKeyFromString(proxyAccessData.sshKey, proxyAccessData.sshPassphrase);
+                            proxyConnectionDataBuilder.withKeyFromString(proxyAccessData.getSshKey(), proxyAccessData.getSshPassphrase());
                             break;
                         case PASSWORD:
-                            proxyConnectionDataBuilder.withRemotePassword(StringUtils.defaultString(proxyAccessData.password));
+                            proxyConnectionDataBuilder.withRemotePassword(StringUtils.defaultString(proxyAccessData.getPassword()));
                             break;
                         default:
-                            throw new IllegalArgumentException("Proxy does not know how to handle " + accessData.authenticationType);
+                            throw new IllegalArgumentException("Proxy does not know how to handle " + accessData.getAuthenticationType());
                     }
 
                     final ProxyConnectionData connectionData = proxyConnectionDataBuilder.build();
 
-                    proxyAccessData.proxyRegistrationInfo = sshProxyService.register(connectionData);
-
+                    proxyAccessData.setProxyRegistrationInfo(sshProxyService.register(connectionData));
                     final URI repositoryViaProxy = UriUtils.getUriViaProxy(proxyAccessData, repositoryUri);
-
-                    proxyAccessData.repositoryUrl = repositoryViaProxy.toString();
+                    proxyAccessData.setRepositoryUrl(repositoryViaProxy.toString());
                 }
                 catch (IOException e)
                 {
@@ -194,12 +194,11 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
         }
         else
         {
-            if (accessData.authenticationType == GitAuthenticationType.PASSWORD)
+            if (accessData.getAuthenticationType() == GitAuthenticationType.PASSWORD)
             {
-                GitRepository.GitRepositoryAccessData credentialsAwareAccessData = accessData.cloneAccessData();
+                GitRepositoryAccessData credentialsAwareAccessData = GitRepositoryAccessData.builder(accessData).build();
                 URI repositoryUrl = wrapWithUsernameAndPassword(credentialsAwareAccessData);
-                credentialsAwareAccessData.repositoryUrl = repositoryUrl.toString();
-
+                credentialsAwareAccessData.setRepositoryUrl(repositoryUrl.toString());
                 return credentialsAwareAccessData;
             }
         }
@@ -253,11 +252,11 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
     }
 
     @NotNull
-    private URI wrapWithUsernameAndPassword(GitRepository.GitRepositoryAccessData repositoryAccessData)
+    private URI wrapWithUsernameAndPassword(GitRepositoryAccessData repositoryAccessData)
     {
         try
         {
-            URI remoteUri = new URI(repositoryAccessData.repositoryUrl);
+            URI remoteUri = new URI(repositoryAccessData.getRepositoryUrl());
             return new URI(remoteUri.getScheme(),
                            getAuthority(repositoryAccessData),
                            remoteUri.getHost(),
@@ -269,23 +268,23 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
         catch (URISyntaxException e)
         {
             // can't really happen
-            final String message = "Cannot parse remote URI: " + repositoryAccessData.repositoryUrl;
+            final String message = "Cannot parse remote URI: " + repositoryAccessData.getRepositoryUrl();
             NativeGitOperationHelper.log.error(message, e);
             throw new RuntimeException(e);
         }
     }
 
     @Nullable
-    private String getAuthority(final GitRepository.GitRepositoryAccessData repositoryAccessData) {
-        final String username = repositoryAccessData.username;
+    private String getAuthority(final GitRepositoryAccessData repositoryAccessData) {
+        final String username = repositoryAccessData.getUsername();
         if (StringUtils.isEmpty(username))
         {
             return null;
         }
 
-        String repositoryUrl = repositoryAccessData.repositoryUrl;
+        String repositoryUrl = repositoryAccessData.getRepositoryUrl();
         
-        final boolean passwordAuthentication = repositoryAccessData.authenticationType == GitAuthenticationType.PASSWORD;
+        final boolean passwordAuthentication = repositoryAccessData.getAuthenticationType() == GitAuthenticationType.PASSWORD;
         final boolean isHttpBased = repositoryUrl.startsWith("http://") || repositoryUrl.startsWith("https://");
         final boolean acceptsPasswordInUri = isHttpBased;
 
@@ -294,7 +293,7 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
             return username;
         }
 
-        final String password = StringUtils.defaultIfEmpty(repositoryAccessData.password, "none"); //otherwise we'd get a password prompt
+        final String password = StringUtils.defaultIfEmpty(repositoryAccessData.getPassword(), "none"); //otherwise we'd get a password prompt
 
         return username + ":" + password;
     }
@@ -354,9 +353,9 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
         }
     }
 
-    protected void closeProxy(@NotNull final GitRepository.GitRepositoryAccessData accessData)
+    protected void closeProxy(@NotNull final GitRepositoryAccessData accessData)
     {
-        sshProxyService.unregister(accessData.proxyRegistrationInfo);
+        sshProxyService.unregister(accessData.getProxyRegistrationInfo());
     }
 
     @NotNull
@@ -373,8 +372,8 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
             File lck = new File(sourceDirectory, "index.lock");
             FileUtils.deleteQuietly(lck);
 
-            gitCommandProcessor.runCheckoutCommand(sourceDirectory, targetRevision, accessData.branch);
-            if (accessData.useSubmodules)
+            gitCommandProcessor.runCheckoutCommand(sourceDirectory, targetRevision, accessData.getBranch());
+            if (accessData.isUseSubmodules())
             {
                 gitCommandProcessor.runSubmoduleUpdateCommand(sourceDirectory);
             }
@@ -393,7 +392,7 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
         try
         {
             createLocalRepository(sourceDirectory, null);
-            final GitRepository.GitRepositoryAccessData proxiedAccessData = adjustRepositoryAccess(accessData);
+            final GitRepositoryAccessData proxiedAccessData = adjustRepositoryAccess(accessData);
 
             try
             {
@@ -416,7 +415,7 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
                 }
                 refSpecDescription[0] = resolvedRefSpec;
 
-                buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.fetching", resolvedRefSpec, accessData.repositoryUrl)
+                buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.fetching", resolvedRefSpec, accessData.getRepositoryUrl())
                                              + (useShallow ? " " + i18nResolver.getText("repository.git.messages.doingShallowFetch") : ""));
 
                 gitCommandProcessor.runFetchCommand(sourceDirectory, proxiedAccessData, "+"+resolvedRefSpec+":"+resolvedRefSpec, useShallow);
@@ -428,13 +427,13 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
         }
         catch (Exception e)
         {
-            String message = i18nResolver.getText("repository.git.messages.fetchingFailed", accessData.repositoryUrl, refSpecDescription[0], sourceDirectory);
+            String message = i18nResolver.getText("repository.git.messages.fetchingFailed", accessData.getRepositoryUrl(), refSpecDescription[0], sourceDirectory);
             throw new RepositoryException(buildLogger.addErrorLogEntry(message + " " + e.getMessage()), e);
         }
     }
 
     @Nullable
-    private Pair<String, String> resolveBranch(final GitRepository.GitRepositoryAccessData accessData,
+    private Pair<String, String> resolveBranch(final GitRepositoryAccessData accessData,
                                                final File sourceDirectory,
                                                final String branch) throws RepositoryException
     {
@@ -465,9 +464,9 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
 
     @NotNull
     @Override
-    public List<VcsBranch> getOpenBranches(@NotNull final GitRepository.GitRepositoryAccessData repositoryData, final File workingDir) throws RepositoryException
+    public List<VcsBranch> getOpenBranches(@NotNull final GitRepositoryAccessData repositoryData, final File workingDir) throws RepositoryException
     {
-        final GitRepository.GitRepositoryAccessData proxiedAccessData = adjustRepositoryAccess(repositoryData);
+        final GitRepositoryAccessData proxiedAccessData = adjustRepositoryAccess(repositoryData);
         try
         {
             final Map<String, String> refs = gitCommandProcessor.getRemoteRefs(workingDir, proxiedAccessData);
@@ -511,14 +510,14 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
     @Override
     public String obtainLatestRevision() throws RepositoryException
     {
-        final GitRepository.GitRepositoryAccessData proxiedAccessData = adjustRepositoryAccess(accessData);
+        final GitRepositoryAccessData proxiedAccessData = adjustRepositoryAccess(accessData);
         try
         {
             final File workingDir = new File(".");
-            final Pair<String, String> branchRef = resolveBranch(proxiedAccessData, workingDir, accessData.branch);
+            final Pair<String, String> branchRef = resolveBranch(proxiedAccessData, workingDir, accessData.getBranch());
             if (branchRef==null)
             {
-                throw new InvalidRepositoryException(i18nResolver.getText("repository.git.messages.cannotDetermineHead", PasswordMaskingUtils.mask(accessData.repositoryUrl, accessData.password), accessData.branch));
+                throw new InvalidRepositoryException(i18nResolver.getText("repository.git.messages.cannotDetermineHead", PasswordMaskingUtils.mask(accessData.getRepositoryUrl(), accessData.getPassword()), accessData.getBranch()));
             }
 
             return branchRef.second;

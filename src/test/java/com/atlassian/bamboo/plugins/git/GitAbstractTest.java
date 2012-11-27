@@ -9,7 +9,6 @@ import com.atlassian.bamboo.core.TransportProtocol;
 import com.atlassian.bamboo.plan.PlanKey;
 import com.atlassian.bamboo.plan.PlanKeys;
 import com.atlassian.bamboo.plan.branch.BranchIntegrationHelper;
-import com.atlassian.bamboo.plugins.git.GitRepository.GitRepositoryAccessData;
 import com.atlassian.bamboo.project.Project;
 import com.atlassian.bamboo.repository.RepositoryException;
 import com.atlassian.bamboo.security.EncryptionService;
@@ -136,7 +135,7 @@ public class GitAbstractTest
         I18nResolver i18nResolver = Mockito.mock(I18nResolver.class);
         final GitRepository repository = Mockito.mock(GitRepository.class);
         Mockito.when(repository.getWorkingDirectory()).thenReturn(new File("/"));
-        Mockito.when(repository.getGitCapability()).thenReturn("/usr/bin/git");
+        Mockito.when(repository.getGitCapability()).thenReturn("git");
         final SshProxyService sshProxyService = Mockito.mock(SshProxyService.class);
         return new NativeGitOperationHelper(repository, accessData, sshProxyService, new NullBuildLogger(), i18nResolver);
     }
@@ -244,23 +243,23 @@ public class GitAbstractTest
 
     protected static GitRepositoryAccessData createAccessData(@NotNull String repositoryUrl, String branch, @Nullable String username, @Nullable String password, @Nullable String sshKey, @Nullable String sshPassphrase)
     {
-        GitRepositoryAccessData accessData = new GitRepositoryAccessData();
-        accessData.repositoryUrl = repositoryUrl;
-        accessData.branch = branch;
-        accessData.username = username;
-        accessData.password = password;
-        accessData.sshKey = sshKey;
-        accessData.sshPassphrase = sshPassphrase;
+        GitRepositoryAccessData.Builder builder = GitRepositoryAccessData.builder()
+                .repositoryUrl(repositoryUrl)
+                .branch( branch)
+                .username(username)
+                .password(password)
+                .sshKey(sshKey)
+                .sshPassphrase(sshPassphrase)
+                .commandTimeout(1);
         if (password!=null)
         {
-            accessData.authenticationType = GitAuthenticationType.PASSWORD;
+            builder.authenticationType(GitAuthenticationType.PASSWORD);
         }
         if (password==null && sshKey==null)
         {
-            accessData.authenticationType = GitAuthenticationType.NONE;
+            builder.authenticationType(GitAuthenticationType.NONE);
         }
-        accessData.commandTimeout = 1;
-        return accessData;
+        return builder.build();
     }
 
     protected static BuildContext mockBuildContext()
@@ -311,7 +310,7 @@ public class GitAbstractTest
         @Override
         public String getGitCapability()
         {
-            return "/usr/bin/git";
+            return "git";
         }
     }
 }
