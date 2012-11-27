@@ -7,8 +7,10 @@ import com.atlassian.bamboo.ssh.ProxyErrorReceiver;
 import com.atlassian.bamboo.util.BambooFileUtils;
 import com.atlassian.bamboo.util.BambooFilenameUtils;
 import com.atlassian.bamboo.util.BambooStringUtils;
+import com.atlassian.bamboo.util.Narrow;
 import com.atlassian.bamboo.util.PasswordMaskingUtils;
 import com.atlassian.bamboo.utils.Pair;
+import com.atlassian.fugue.Option;
 import com.atlassian.utils.process.ExternalProcess;
 import com.atlassian.utils.process.ExternalProcessBuilder;
 import com.atlassian.utils.process.LineOutputHandler;
@@ -18,7 +20,11 @@ import com.atlassian.utils.process.StringOutputHandler;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.SystemUtils;
@@ -32,7 +38,9 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -44,6 +52,8 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
     // ------------------------------------------------------------------------------------------------------- Constants
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("^git version (.*)");
+    private static final Pattern LS_REMOTE_LINE_PATTERN = Pattern.compile("^([0-9a-f]{40})\\s+(.*)");
+
     private static final String SSH_OPTIONS = "-o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null";
     private static final String SSH_WIN =
             "@ssh " + SSH_OPTIONS + " %*\r\n";
@@ -106,6 +116,29 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
     // ----------------------------------------------------------------------------------------------- Interface Methods
     // -------------------------------------------------------------------------------------------------- Public Methods
 
+    private final static Cache<Pair<File, GitCommandProcessor>, Option<String>> GIT_EXISTENCE_CHECK_RESULT =
+            CacheBuilder.newBuilder().expireAfterWrite(15, TimeUnit.MINUTES).build(new CacheLoader<Pair<File, GitCommandProcessor>, Option<String>>()
+            {
+                @Override
+                public Option<String> load(final Pair<File, GitCommandProcessor> input) throws Exception
+                {
+                    final GitCommandProcessor gitCommandProcessor = input.second;
+                    final File workingDirectory = input.first;
+                    final GitCommandBuilder commandBuilder = gitCommandProcessor.createCommandBuilder("version");
+
+                    final GitStringOutputHandler outputHandler = new GitStringOutputHandler();
+                    final int exitCode = gitCommandProcessor.runCommand(commandBuilder, workingDirectory, outputHandler);
+                    final String output = outputHandler.getOutput();
+                    final Matcher matcher = GIT_VERSION_PATTERN.matcher(output);
+                    if (!matcher.find())
+                    {
+                        return Option.some(" Exit code: " + exitCode + " Output:\n[" + output + "]");
+                    }
+                    return Option.none();
+                }
+            });
+
+
     /**
      * Checks whether git exist in current system.
      *
@@ -115,19 +148,29 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
      */
     public void checkGitExistenceInSystem(@NotNull final File workingDirectory) throws RepositoryException
     {
-        GitCommandBuilder commandBuilder = createCommandBuilder("version");
-
-        GitStringOutputHandler outputHandler = new GitStringOutputHandler();
-
         try
         {
-            final int exitCode = runCommand(commandBuilder, workingDirectory, outputHandler);
-            String output = outputHandler.getOutput();
-            Matcher matcher = GIT_VERSION_PATTERN.matcher(output);
-            if (!matcher.find())
+            final boolean gitDependsOnWorkingDirectory = gitExecutable.trim().startsWith(".");
+            final Pair<File, GitCommandProcessor> cacheKey = Pair.make(gitDependsOnWorkingDirectory?workingDirectory:new File("/"), this);
+            final Option<String> errorOrNothing;
+            try
             {
-                String errorMessage = "Git Executable capability `" + gitExecutable + "' does not seem to be a git client. Is it properly set?";
-                log.error(errorMessage + " Exit code: " + exitCode + " Output:\n[" + output + "]");
+                errorOrNothing = GIT_EXISTENCE_CHECK_RESULT.get(cacheKey);
+            }
+            catch (ExecutionException e)
+            {
+                final RepositoryException re = Narrow.to(e, RepositoryException.class);
+                if (re!=null)
+                {
+                    throw re;
+                }
+                throw new RepositoryException(e.getCause());
+            }
+            if (!errorOrNothing.isEmpty())
+            {
+                GIT_EXISTENCE_CHECK_RESULT.invalidate(cacheKey);
+                final String errorMessage = "Git Executable capability `" + gitExecutable + "' does not seem to be a git client. Is it properly set? ";
+                log.error(errorMessage + errorOrNothing.get());
                 throw new RepositoryException(errorMessage);
             }
         }
@@ -207,7 +250,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         String destination = revision;
         if (StringUtils.isNotBlank(possibleBranch))
         {
-           destination = possibleBranch;
+            destination = possibleBranch;
         }
         runCheckoutCommandForBranchOrRevision(workingDirectory, destination);
     }
@@ -265,41 +308,33 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         return "";
     }
 
-    @Nullable
-    public String getRemoteBranchLatestCommitHash(File workingDirectory, GitRepository.GitRepositoryAccessData accessData, String branchRef) throws RepositoryException
+    @NotNull
+    public Map<String, String> getRemoteRefs(File workingDirectory, GitRepository.GitRepositoryAccessData accessData) throws RepositoryException
     {
-        LineOutputHandlerImpl goh = new LineOutputHandlerImpl();
-        GitCommandBuilder commandBuilder = createCommandBuilder("ls-remote", accessData.repositoryUrl, branchRef);
+        final LineOutputHandlerImpl goh = new LineOutputHandlerImpl();
+        final GitCommandBuilder commandBuilder = createCommandBuilder("ls-remote", accessData.repositoryUrl);
         runCommand(commandBuilder, workingDirectory, goh);
-        for (String ref : goh.getLines())
-        {
-            if (ref.contains(branchRef))
-            {
-                return ref.substring(0, ref.indexOf(branchRef)).trim();
-            }
-
-        }
-        return null;
+        final Map<String, String> result = parseLsRemoteOutput(goh);
+        return result;
     }
 
-    public Set<String> getRemoteRefs(File workingDirectory, GitRepository.GitRepositoryAccessData accessData) throws RepositoryException
+    @NotNull
+    static Map<String, String> parseLsRemoteOutput(final LineOutputHandlerImpl goh)
     {
-        LineOutputHandlerImpl goh = new LineOutputHandlerImpl();
-        GitCommandBuilder commandBuilder = createCommandBuilder("ls-remote", accessData.repositoryUrl);
-        runCommand(commandBuilder, workingDirectory, goh);
-        Set<String> result = Sets.newHashSet();
-        for (String ref : goh.getLines())
+        final Map<String, String> refs = Maps.newLinkedHashMap();
+        for (final String ref : goh.getLines())
         {
             if (ref.contains("^{}"))
             {
                 continue;
             }
-            if (ref.contains("refs"))
+            final Matcher matcher = LS_REMOTE_LINE_PATTERN.matcher(ref);
+            if (matcher.matches())
             {
-                result.add(ref.substring(ref.indexOf("refs")));
+                refs.put(matcher.group(2), matcher.group(1));
             }
         }
-        return result;
+        return refs;
     }
 
     public GitCommandBuilder createCommandBuilder(String... commands)
@@ -406,7 +441,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         log.info("from revision: [" + lastVcsRevisionKey + "]; to revision: [" + targetRevision + "]");
         final CommitOutputHandler coh = new CommitOutputHandler(shallows, maxCommits);
         runCommand(commandBuilder, cacheDirectory, coh);
-        return new Pair<List<CommitContext>, Integer>(coh.getExtractedCommits(), coh.getSkippedCommitCount());
+        return Pair.make(coh.getExtractedCommits(), coh.getSkippedCommitCount());
     }
 
     interface GitOutputHandler extends OutputHandler
