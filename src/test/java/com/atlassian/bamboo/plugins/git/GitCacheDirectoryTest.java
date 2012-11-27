@@ -59,6 +59,7 @@ public class GitCacheDirectoryTest extends GitAbstractTest
         GitRepositoryAccessData accessData2 = createSampleAccessData(shallow);
 
         Field f = GitRepositoryAccessData.class.getDeclaredField(field);
+        f.setAccessible(true);
         String val = (String) f.get(accessData2);
         f.set(accessData2, val + "chg");
 
