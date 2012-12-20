@@ -535,6 +535,7 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
     }
 
     @Override
+    @NotNull
     public CommitContext getCommit(final File directory, final String targetRevision) throws RepositoryException
     {
         return gitCommandProcessor.extractCommit(directory, targetRevision);

@@ -413,6 +413,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         log.debug(mergeOutputHandler.getStdout());
     }
 
+    @NotNull
     public CommitContext extractCommit(final File directory, final String targetRevision) throws  RepositoryException
     {
         final CommitOutputHandler coh = new CommitOutputHandler(Collections.<String>emptySet());

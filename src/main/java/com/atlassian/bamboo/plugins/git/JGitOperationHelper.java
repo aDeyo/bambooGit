@@ -782,8 +782,8 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
         }
     }
 
+    @NotNull
     @Override
-    @Nullable
     public CommitContext getCommit(final File directory, final String targetRevision) throws RepositoryException
     {
         FileRepository localRepository = null;
@@ -822,7 +822,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
             }
         }
 
-        return null;
+        throw new RepositoryException("Could not find commit with revision " + targetRevision);
     }
 
     protected interface WithTransportCallback<E extends java.lang.Throwable, T>

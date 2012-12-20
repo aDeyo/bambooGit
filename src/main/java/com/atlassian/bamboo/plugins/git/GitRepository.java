@@ -511,7 +511,6 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
         final String targetRevision = helper.obtainLatestRevision();
 
         final File cacheDirectory = getCacheDirectory();
-        log.debug("Fetching remote repository");
         Result<RepositoryException, CommitContext> result = GitCacheDirectory.getCacheLock(cacheDirectory).withLock(new Supplier<Result<RepositoryException, CommitContext>>()
         {
             public Result<RepositoryException, CommitContext> get()
@@ -519,8 +518,19 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                 boolean doShallowFetch = USE_SHALLOW_CLONES && substitutedAccessData.isUseShallowClones() && !cacheDirectory.isDirectory();
                 try
                 {
-                    helper.fetch(cacheDirectory, targetRevision, doShallowFetch);
-                    return Result.result(helper.getCommit(cacheDirectory, targetRevision));
+                    try
+                    {
+                        final CommitContext commit = helper.getCommit(cacheDirectory, targetRevision);
+                        log.info("Found " + commit.getChangeSetId() + " as the last commit for " + this);
+                        return Result.result(commit);
+                    }
+                    catch (RepositoryException e)
+                    {
+                        // Commit might not exist locally yet, but a fetch is expensive, so let's try getting it first
+                        log.debug("Fetching remote repository");
+                        helper.fetch(cacheDirectory, targetRevision, doShallowFetch);
+                        return Result.result(helper.getCommit(cacheDirectory, targetRevision));
+                    }
                 }
                 catch (RepositoryException e)
                 {

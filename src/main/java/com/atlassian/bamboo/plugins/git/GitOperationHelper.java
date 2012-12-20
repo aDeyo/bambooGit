@@ -42,7 +42,12 @@ public interface GitOperationHelper
 
     boolean checkRevisionExistsInCacheRepository(@NotNull File repositoryDirectory, @NotNull String targetRevision) throws IOException, RepositoryException;
 
-    @Nullable
+    /**
+     * Gets the commit for the revision, given a working directory.
+     *
+     * @throws RepositoryException if the revision can't be found
+     */
+    @NotNull
     CommitContext getCommit(File directory, String targetRevision) throws RepositoryException;
 
     boolean merge(@NotNull File workspaceDir, @NotNull String targetRevision, @NotNull String committerName, @NotNull String committerEmail) throws RepositoryException;
