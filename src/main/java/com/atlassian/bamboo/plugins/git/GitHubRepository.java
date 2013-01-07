@@ -27,13 +27,13 @@ import com.atlassian.bamboo.v2.build.repository.CustomSourceDirectoryAwareReposi
 import com.atlassian.bamboo.variable.CustomVariableContext;
 import com.atlassian.bamboo.ww2.actions.build.admin.create.BuildConfiguration;
 import com.atlassian.sal.api.message.I18nResolver;
+import com.opensymphony.webwork.ServletActionContext;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import com.opensymphony.webwork.ServletActionContext;
 
 import java.io.File;
 import java.util.List;
@@ -46,6 +46,7 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
                                                                               BranchMergingAwareRepository
 
 {
+    @SuppressWarnings("unused")
     private static final Logger log = Logger.getLogger(GitHubRepository.class);
     // ------------------------------------------------------------------------------------------------------- Constants
 
@@ -67,15 +68,7 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
 
     private GitRepository gitRepository = new GitRepository();
 
-    private String username;
-    private String password;
-    private String repository;
-    private String branch;
-    private boolean useShallowClones;
-    private boolean useSubmodules;
-    private boolean verboseLogs;
-    private int commandTimeout;
-
+    private GitHubRepositoryAccessData accessData = new GitHubRepositoryAccessData();
 
     // ---------------------------------------------------------------------------------------------------- Dependencies
 
@@ -156,8 +149,8 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
         {
             GitHubRepository ghRepo = (GitHubRepository) repository;
             return !new EqualsBuilder()
-                    .append(this.repository, ghRepo.getRepository())
-                    .append(this.branch, ghRepo.getBranch())
+                    .append(this.getRepository(), ghRepo.getRepository())
+                    .append(this.getBranch(), ghRepo.getBranch())
                     .isEquals();
         }
         else
@@ -191,30 +184,20 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
     public void populateFromConfig(@NotNull HierarchicalConfiguration config)
     {
         super.populateFromConfig(config);
-        username = config.getString(REPOSITORY_GITHUB_USERNAME);
-        password = config.getString(REPOSITORY_GITHUB_PASSWORD);
-        repository = config.getString(REPOSITORY_GITHUB_REPOSITORY);
-        branch = config.getString(REPOSITORY_GITHUB_BRANCH);
-        useShallowClones = config.getBoolean(REPOSITORY_GITHUB_USE_SHALLOW_CLONES);
-        useSubmodules = config.getBoolean(REPOSITORY_GITHUB_USE_SUBMODULES);
-        commandTimeout = config.getInt(REPOSITORY_GITHUB_COMMAND_TIMEOUT, GitRepository.DEFAULT_COMMAND_TIMEOUT_IN_MINUTES);
-        verboseLogs = config.getBoolean(REPOSITORY_GITHUB_VERBOSE_LOGS, false);
 
-        gitRepository.setAccessData(GitRepositoryAccessData.builder(gitRepository.getAccessData())
-                                            .repositoryUrl("https://github.com/" + repository + ".git")
-                                            .username(username)
-                                            .password(password)
-                                            .branch(branch)
-                                            .sshKey("")
-                                            .sshPassphrase("")
-                                            .authenticationType(GitAuthenticationType.PASSWORD)
-                                            .useShallowClones(useShallowClones)
-                                            .useSubmodules(useSubmodules)
-                                            .commandTimeout(commandTimeout)
-                                            .verboseLogs(verboseLogs)
-                                            .build());
+        final GitHubRepositoryAccessData accessData = GitHubRepositoryAccessData.builder(getAccessData())
+                .repository(config.getString(REPOSITORY_GITHUB_REPOSITORY))
+                .username(config.getString(REPOSITORY_GITHUB_USERNAME))
+                .password(config.getString(REPOSITORY_GITHUB_PASSWORD))
+                .branch(config.getString(REPOSITORY_GITHUB_BRANCH))
+                .useShallowClones(config.getBoolean(REPOSITORY_GITHUB_USE_SHALLOW_CLONES))
+                .useSubmodules(config.getBoolean(REPOSITORY_GITHUB_USE_SUBMODULES))
+                .commandTimeout(config.getInt(REPOSITORY_GITHUB_COMMAND_TIMEOUT, GitRepository.DEFAULT_COMMAND_TIMEOUT_IN_MINUTES))
+                .verboseLogs(config.getBoolean(REPOSITORY_GITHUB_VERBOSE_LOGS, false))
+                .build();
 
-        gitRepository.setVcsBranch(new VcsBranchImpl(branch));
+
+        setAccessData(accessData);
     }
 
     @NotNull
@@ -222,14 +205,14 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
     public HierarchicalConfiguration toConfiguration()
     {
         HierarchicalConfiguration configuration = super.toConfiguration();
-        configuration.setProperty(REPOSITORY_GITHUB_USERNAME, username);
-        configuration.setProperty(REPOSITORY_GITHUB_PASSWORD, password);
-        configuration.setProperty(REPOSITORY_GITHUB_REPOSITORY, repository);
-        configuration.setProperty(REPOSITORY_GITHUB_BRANCH, branch);
-        configuration.setProperty(REPOSITORY_GITHUB_USE_SHALLOW_CLONES, useShallowClones);
-        configuration.setProperty(REPOSITORY_GITHUB_USE_SUBMODULES, useSubmodules);
-        configuration.setProperty(REPOSITORY_GITHUB_COMMAND_TIMEOUT, commandTimeout);
-        configuration.setProperty(REPOSITORY_GITHUB_VERBOSE_LOGS, verboseLogs);
+        configuration.setProperty(REPOSITORY_GITHUB_USERNAME, getUsername());
+        configuration.setProperty(REPOSITORY_GITHUB_PASSWORD, getEncryptedPassword());
+        configuration.setProperty(REPOSITORY_GITHUB_REPOSITORY, getRepository());
+        configuration.setProperty(REPOSITORY_GITHUB_BRANCH, getBranch());
+        configuration.setProperty(REPOSITORY_GITHUB_USE_SHALLOW_CLONES, isUseShallowClones());
+        configuration.setProperty(REPOSITORY_GITHUB_USE_SUBMODULES, isUseSubmodules());
+        configuration.setProperty(REPOSITORY_GITHUB_COMMAND_TIMEOUT, getCommandTimeout());
+        configuration.setProperty(REPOSITORY_GITHUB_VERBOSE_LOGS, getVerboseLogs());
 
         return configuration;
     }
@@ -286,42 +269,42 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
 
     public String getUsername()
     {
-        return username;
+        return accessData.getUsername();
     }
 
     public String getRepository()
     {
-        return repository;
+        return accessData.getRepository();
     }
 
     public String getBranch()
     {
-        return branch;
+        return accessData.getBranch();
     }
 
     public boolean isUseShallowClones()
     {
-        return useShallowClones;
+        return accessData.isUseShallowClones();
     }
 
     public String getEncryptedPassword()
     {
-        return password;
+        return accessData.getPassword();
     }
 
     public boolean isUseSubmodules()
     {
-        return useSubmodules;
+        return accessData.isUseSubmodules();
     }
 
     public int getCommandTimeout()
     {
-        return commandTimeout;
+        return accessData.getCommandTimeout();
     }
 
     public boolean getVerboseLogs()
     {
-        return verboseLogs;
+        return accessData.isVerboseLogs();
     }
 
     @NotNull
@@ -335,7 +318,7 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
     @Override
     public List<VcsBranch> getOpenBranches(@Nullable final String context) throws RepositoryException
     {
-        return gitRepository.getOpenBranches();
+        return gitRepository.getOpenBranches(context);
     }
 
     @Override
@@ -349,7 +332,6 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
     public void setVcsBranch(@NotNull final VcsBranch vcsBranch)
     {
         gitRepository.setVcsBranch(vcsBranch);
-        branch = vcsBranch.getName();
     }
 
     @Override
@@ -412,4 +394,29 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
         return i18nResolver.getText("repository.git.description", gitRepository.getGitCapability(), capabilitiesLink);
     }
 
+    public GitHubRepositoryAccessData getAccessData()
+    {
+        return accessData;
+    }
+
+    public void setAccessData(GitHubRepositoryAccessData accessData)
+    {
+        this.accessData = accessData;
+
+        gitRepository.setAccessData(GitRepositoryAccessData.builder(gitRepository.getAccessData())
+                                            .repositoryUrl("https://github.com/" + accessData.getRepository() + ".git")
+                                            .username(accessData.getUsername())
+                                            .password(accessData.getPassword())
+                                            .branch(accessData.getBranch())
+                                            .sshKey(null)
+                                            .sshPassphrase(null)
+                                            .authenticationType(GitAuthenticationType.PASSWORD)
+                                            .useShallowClones(accessData.isUseShallowClones())
+                                            .useSubmodules(accessData.isUseSubmodules())
+                                            .commandTimeout(accessData.getCommandTimeout())
+                                            .verboseLogs(accessData.isVerboseLogs())
+                                            .build());
+
+        gitRepository.setVcsBranch(new VcsBranchImpl(accessData.getBranch()));
+    }
 }
