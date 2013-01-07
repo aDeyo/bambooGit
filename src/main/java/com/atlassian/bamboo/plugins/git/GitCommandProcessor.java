@@ -198,7 +198,10 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         GitCommandBuilder commandBuilder = createCommandBuilder("status", "--porcelain", "--untracked-files=no");
         final LineOutputHandlerImpl gitOutputHandler = new LineOutputHandlerImpl();
         runCommand(commandBuilder, workingDirectory, gitOutputHandler);
-        log.debug("git status output: " + gitOutputHandler.getStdout());
+        if (log.isDebugEnabled())
+        {
+            log.debug("git status output: " + gitOutputHandler.getStdout());
+        }
         return gitOutputHandler.getLines();
     }
 
