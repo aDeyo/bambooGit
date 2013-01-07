@@ -216,6 +216,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         if (!useShallow && shallowFile.exists())
         {
             //directory has shallows: we need to make it deep
+            log.info("Detected that the directory needs to be converted to a full clone: " + accessData.getRepositoryUrl() + " branch: " + accessData.getBranch() + " Working dir: " + workingDirectory.getAbsolutePath());
             commandBuilder.append("--depth=99999999");
         }
         if (accessData.isVerboseLogs())
