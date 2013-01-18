@@ -104,7 +104,16 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         String scriptContent = StringUtils.isBlank(sshCommand) ? getDefaultSshWrapperScriptContent() : getCustomisedSshWrapperScriptContent();
         try
         {
-            final File sshScript = BambooFileUtils.getSharedTemporaryFile(scriptContent, "bamboo-ssh.", BambooFilenameUtils.getScriptSuffix(), true, null);
+            //on Windows, git cannot cope with GIT_SSH pointing to a batch file located in a directory with spaces in its name
+            final boolean tmpDirHasSpaceInName = SystemUtils.getJavaIoTmpDir().getAbsolutePath().contains(" ");
+
+            final BambooFileUtils.TemporaryFileSpecBuilder specBuilder =
+                    new BambooFileUtils.TemporaryFileSpecBuilder(scriptContent, "bamboo-ssh.")
+                            .setSuffix(BambooFilenameUtils.getScriptSuffix())
+                            .setExecutable(true)
+                            .setPrefer83PathsOnWindows(tmpDirHasSpaceInName);
+
+            final File sshScript = BambooFileUtils.getSharedTemporaryFile(specBuilder.build());
             return sshScript.getAbsolutePath();
         }
         catch (IOException e)
