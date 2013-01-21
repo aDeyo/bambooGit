@@ -123,14 +123,16 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
 
     // ----------------------------------------------------------------------------------------------- Interface Methods
     // -------------------------------------------------------------------------------------------------- Public Methods
-    private static class GitExistencePair
+    private final static class GitExistencePair
     {
         public final File workingDirectory;
+        private final String gitExecutableName;
         public final GitCommandProcessor gitCommandProcessor;
 
-        public GitExistencePair(final File workingDirectory, final GitCommandProcessor gitCommandProcessor)
+        public GitExistencePair(final File workingDirectory, final String gitExecutableName, final GitCommandProcessor gitCommandProcessor)
         {
             this.workingDirectory = workingDirectory;
+            this.gitExecutableName = gitExecutableName;
             this.gitCommandProcessor = gitCommandProcessor;
         }
 
@@ -138,10 +140,11 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         public boolean equals(Object o)
         {
             if (this == o) return true;
-            if (!(o instanceof GitExistencePair)) return false;
+            if (o == null || getClass() != o.getClass()) return false;
 
             GitExistencePair that = (GitExistencePair) o;
 
+            if (!gitExecutableName.equals(that.gitExecutableName)) return false;
             if (!workingDirectory.equals(that.workingDirectory)) return false;
 
             return true;
@@ -150,7 +153,9 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         @Override
         public int hashCode()
         {
-            return workingDirectory.hashCode();
+            int result = workingDirectory.hashCode();
+            result = 31 * result + gitExecutableName.hashCode();
+            return result;
         }
     }
 
@@ -187,7 +192,8 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
     public void checkGitExistenceInSystem(@NotNull final File workingDirectory) throws RepositoryException
     {
         final boolean gitDependsOnWorkingDirectory = gitExecutable.trim().startsWith(".");
-        final GitExistencePair cacheKey = new GitExistencePair(gitDependsOnWorkingDirectory?workingDirectory:new File("/"), this);
+        final File directory = gitDependsOnWorkingDirectory ? workingDirectory : new File("/");
+        final GitExistencePair cacheKey = new GitExistencePair(directory, gitExecutable, this);
         try
         {
             GIT_EXISTENCE_CHECK_RESULT.get(cacheKey);
