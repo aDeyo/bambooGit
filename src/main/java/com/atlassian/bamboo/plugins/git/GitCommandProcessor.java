@@ -100,7 +100,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
 
     private String getSshScriptToRun()
     {
-        String scriptContent = StringUtils.isBlank(sshCommand) ? getDefaultSshWrapperScriptContent() : getCustomisedSshWrapperScriptContent();
+        final String scriptContent = StringUtils.isBlank(sshCommand) ? getDefaultSshWrapperScriptContent() : getCustomisedSshWrapperScriptContent();
         try
         {
             //on Windows, git cannot cope with GIT_SSH pointing to a batch file located in a directory with spaces in its name

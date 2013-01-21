@@ -4,6 +4,7 @@ import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.atlassian.bamboo.repository.RepositoryException;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.RandomStringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
@@ -57,10 +58,11 @@ public class GitCommandProcessorTest
     @Test
     public void properlyCachesGitExistence() throws RepositoryException, IOException
     {
-        final GitCommandProcessor brokenGit = new GitCommandProcessor("/asd", Mockito.mock(BuildLogger.class), null, 1, false);
+        final GitCommandProcessor brokenGit = new GitCommandProcessor("/" + RandomStringUtils.randomAscii(10), Mockito.mock(BuildLogger.class), null, 1, false);
+        final String someDir = RandomStringUtils.randomAscii(10);
         try
         {
-            brokenGit.checkGitExistenceInSystem(new File("/tmp"));
+            brokenGit.checkGitExistenceInSystem(new File(someDir));
             fail();
         }
         catch (GitCommandException e)
@@ -69,7 +71,7 @@ public class GitCommandProcessorTest
 
         try
         {
-            brokenGit.checkGitExistenceInSystem(new File("/tmp"));
+            brokenGit.checkGitExistenceInSystem(new File(someDir));
             fail();
         }
         catch (GitCommandException e)
