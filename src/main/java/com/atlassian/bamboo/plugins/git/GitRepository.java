@@ -201,10 +201,22 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                 {
                     GitCacheDirectory.getCacheLock(cacheDirectory).withLock(new Callable<Void>()
                     {
-                        public Void call() throws RepositoryException
+                        public Void call() throws Exception
                         {
                             boolean doShallowFetch = USE_SHALLOW_CLONES && substitutedAccessData.isUseShallowClones() && !cacheDirectory.isDirectory();
-                            helper.fetch(cacheDirectory, fetchRevision, doShallowFetch);
+
+                            try
+                            {
+                                helper.fetch(cacheDirectory, fetchRevision, doShallowFetch);
+                            }
+                            catch (Exception e)
+                            {
+                                rethrowOrRemoveDirectory(e, buildLogger, cacheDirectory, "repository.git.messages.rsRecover.failedToFetchCache");
+                                buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.cleanedCacheDirectory", cacheDirectory));
+
+                                helper.fetch(cacheDirectory, fetchRevision, doShallowFetch);
+                            }
+
                             return null;
                         }
                     });
