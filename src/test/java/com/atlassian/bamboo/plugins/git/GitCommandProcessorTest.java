@@ -1,14 +1,21 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.bamboo.build.logger.BuildLogger;
+import com.atlassian.bamboo.repository.RepositoryException;
 import com.google.common.collect.Lists;
+import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
+import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.fail;
 
 public class GitCommandProcessorTest
 {
@@ -45,5 +52,70 @@ public class GitCommandProcessorTest
         assertEquals(result.size(), 7);
         assertEquals(result.get(TAG), TAG_HASH);
         assertFalse(result.containsKey(OLD_TAG));
+    }
+
+    @Test
+    public void properlyCachesGitExistence() throws RepositoryException, IOException
+    {
+        final GitCommandProcessor brokenGit = new GitCommandProcessor("/asd", Mockito.mock(BuildLogger.class), null, 1, false);
+        try
+        {
+            brokenGit.checkGitExistenceInSystem(new File("/tmp"));
+            fail();
+        }
+        catch (GitCommandException e)
+        {
+        }
+
+        try
+        {
+            brokenGit.checkGitExistenceInSystem(new File("/tmp"));
+            fail();
+        }
+        catch (GitCommandException e)
+        {
+        }
+
+        final File output = File.createTempFile("asserts", null);
+        final File mockGit = File.createTempFile("git", null);
+        mockGit.setExecutable(true);
+        FileUtils.writeStringToFile(mockGit, "echo git version 1.7.10.4\necho 1 >> " + output);
+
+        final GitCommandProcessor gitInAbsoluteLocation = new GitCommandProcessor(mockGit.getAbsolutePath(), Mockito.mock(BuildLogger.class), null, 1, false);
+        gitInAbsoluteLocation.checkGitExistenceInSystem(new File("/usr/bin/git"));
+        assertRunCount(output, 1);
+
+        gitInAbsoluteLocation.checkGitExistenceInSystem(new File("/usr/bin/git"));
+        assertRunCount(output, 1);
+
+        gitInAbsoluteLocation.checkGitExistenceInSystem(new File("/tmp"));
+        assertRunCount(output, 1);
+
+
+        final GitCommandProcessor gitInRelativeLocation = new GitCommandProcessor("./" + mockGit.getName(), Mockito.mock(BuildLogger.class), null, 1, false);
+        gitInRelativeLocation.checkGitExistenceInSystem(new File("/tmp"));
+        assertRunCount(output, 2);
+
+        gitInRelativeLocation.checkGitExistenceInSystem(new File("/tmp"));
+        assertRunCount(output, 2);
+
+        gitInRelativeLocation.checkGitExistenceInSystem(new File("/tmp/../tmp"));
+        assertRunCount(output, 3);
+
+        final GitCommandProcessor otherGitInRelativeLocation = new GitCommandProcessor("./" + mockGit.getName(), Mockito.mock(BuildLogger.class), null, 1, false);
+
+        otherGitInRelativeLocation.checkGitExistenceInSystem(new File("/tmp"));
+        assertRunCount(output, 3);
+
+        otherGitInRelativeLocation.checkGitExistenceInSystem(new File("/tmp"));
+        assertRunCount(output, 3);
+
+        output.delete();
+        mockGit.delete();
+    }
+
+    private void assertRunCount(final File output, final int i) throws IOException
+    {
+        assertEquals(FileUtils.readLines(output).size(), i);
     }
 }
