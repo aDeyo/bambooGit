@@ -27,14 +27,16 @@ public class CommitOutputHandler extends LineOutputHandler implements GitCommand
     private static final String COMMITER_EMAIL = SALT + "commiter_email]";
     private static final String TIMESTAMP = SALT + "timestamp]";
     private static final String COMMIT_MESSAGE = SALT + "commit_message]";
+    private static final String END_OF_COMMIT_MESSAGE = SALT + "commit_message_end]";
     private static final String FILE_LIST = SALT + "file_list]";
 
-    public static final String LOG_COMMAND_FORMAT_STRING = HASH+"%H%n"+COMMITER_NAME+"%cN%n"+COMMITER_EMAIL+"%ce%n"+TIMESTAMP+"%ct%n"+COMMIT_MESSAGE+"%s%n%b"+FILE_LIST;
+    public static final String LOG_COMMAND_FORMAT_STRING = HASH+"%H%n"+COMMITER_NAME+"%cN%n"+COMMITER_EMAIL+"%ce%n"+TIMESTAMP+"%ct%n"+COMMIT_MESSAGE+"%s%n%b"+ END_OF_COMMIT_MESSAGE +"%n" +FILE_LIST;
 
     private enum CommitParserState
     {
         INFO,
         COMMIT_MESSAGE,
+        COMMIT_MESSAGE_COMPLETE,
         FILE_LIST,
         TOO_MANY_COMMITS
     }
@@ -96,11 +98,21 @@ public class CommitOutputHandler extends LineOutputHandler implements GitCommand
             }
             if (parserState == CommitParserState.COMMIT_MESSAGE)
             {
-                if (line.startsWith(FILE_LIST))
+                if (line.startsWith(END_OF_COMMIT_MESSAGE))
                 {
                     if (currentCommit != null && commitMessage != null)
                     {
                         currentCommit.setComment(commitMessage.toString());
+                        commitMessage = null;
+                    }
+                    parserState = CommitParserState.COMMIT_MESSAGE_COMPLETE;
+                }
+                else if (line.startsWith(FILE_LIST))
+                {
+                    //the commit message didn't contain EOL: we need to strip 'end of message' marker
+                    if (currentCommit != null && commitMessage != null)
+                    {
+                        currentCommit.setComment(commitMessage.substring(0, commitMessage.lastIndexOf(END_OF_COMMIT_MESSAGE)));
                         commitMessage = null;
                     }
                     parserState = CommitParserState.FILE_LIST;
@@ -110,6 +122,10 @@ public class CommitOutputHandler extends LineOutputHandler implements GitCommand
                     commitMessage.append('\n');
                     commitMessage.append(line);
                 }
+            }
+            else if (parserState == CommitParserState.COMMIT_MESSAGE_COMPLETE && line.startsWith(FILE_LIST))
+            {
+                parserState = CommitParserState.FILE_LIST;
             }
             else if (parserState == CommitParserState.FILE_LIST && currentCommit != null && !StringUtils.isBlank(line) && !shallows.contains(currentCommit.getChangeSetId()))
             {
