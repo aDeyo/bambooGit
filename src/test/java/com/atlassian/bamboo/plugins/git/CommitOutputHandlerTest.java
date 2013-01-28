@@ -12,22 +12,21 @@ import java.io.BufferedReader;
 import java.io.StringReader;
 import java.util.Date;
 
+import static com.atlassian.bamboo.plugins.git.CommitOutputHandler.COMMITER_EMAIL;
+import static com.atlassian.bamboo.plugins.git.CommitOutputHandler.COMMITER_NAME;
+import static com.atlassian.bamboo.plugins.git.CommitOutputHandler.COMMIT_MESSAGE;
+import static com.atlassian.bamboo.plugins.git.CommitOutputHandler.END_OF_COMMIT_MESSAGE;
+import static com.atlassian.bamboo.plugins.git.CommitOutputHandler.FILE_LIST;
+import static com.atlassian.bamboo.plugins.git.CommitOutputHandler.HASH;
+import static com.atlassian.bamboo.plugins.git.CommitOutputHandler.TIMESTAMP;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
+
 
 public class CommitOutputHandlerTest
 {
     private static final Logger log = Logger.getLogger(CommitOutputHandlerTest.class);
     // ------------------------------------------------------------------------------------------------------- Constants
-    private static final String SALT = "[d31bfa5_BAM_";
-    private static final String HASH = SALT + "hash]";
-    private static final String COMMITER_NAME = SALT + "commiter_name]";
-    private static final String COMMITER_EMAIL = SALT + "commiter_email]";
-    private static final String TIMESTAMP = SALT + "timestamp]";
-    private static final String COMMIT_MESSAGE = SALT + "commit_message]";
-    private static final String END_OF_COMMIT_MESSAGE = SALT + "commit_message_end]";
-    private static final String FILE_LIST = SALT + "file_list]";
-
     // ------------------------------------------------------------------------------------------------- Type Properties
     private CommitOutputHandler commitOutputHandler;
     // ---------------------------------------------------------------------------------------------------- Dependencies
