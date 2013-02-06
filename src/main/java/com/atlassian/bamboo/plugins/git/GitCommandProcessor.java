@@ -49,7 +49,8 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
     private static final Logger log = Logger.getLogger(GitRepository.class);
 
     // ------------------------------------------------------------------------------------------------------- Constants
-
+    public static final String GIT_OUTPUT_ENCODING = "UTF-8";
+    private static final String ENCODING_OPTION = "--encoding=" + GIT_OUTPUT_ENCODING;
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("^git version (.*)");
     private static final Pattern LS_REMOTE_LINE_PATTERN = Pattern.compile("^([0-9a-f]{40})\\s+(.*)");
 
@@ -305,9 +306,9 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
     @NotNull
     public String getRevisionHash(@NotNull final File workingDirectory, @NotNull String revision) throws RepositoryException
     {
-        GitCommandBuilder commandBuilder = createCommandBuilder("log", "-1", "--format=%H");
+        GitCommandBuilder commandBuilder = createCommandBuilder("log", "-1", ENCODING_OPTION, "--format=%H");
         commandBuilder.append(revision);
-        final GitStringOutputHandler outputHandler = new GitStringOutputHandler();
+        final GitStringOutputHandler outputHandler = new GitStringOutputHandler(GIT_OUTPUT_ENCODING);
         runCommand(commandBuilder, workingDirectory, outputHandler);
         return outputHandler.getOutput().trim();
     }
@@ -316,9 +317,9 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
 
     public String getPossibleBranchNameForCheckout(File workingDirectory, String revision, String configuredBranchName) throws RepositoryException
     {
-        GitCommandBuilder commandBuilder = createCommandBuilder("log", "-1", "--format=%d", "--decorate=full");
+        GitCommandBuilder commandBuilder = createCommandBuilder("log", "-1", ENCODING_OPTION, "--format=%d", "--decorate=full");
         commandBuilder.append(revision);
-        final GitStringOutputHandler outputHandler = new GitStringOutputHandler();
+        final GitStringOutputHandler outputHandler = new GitStringOutputHandler(GIT_OUTPUT_ENCODING);
         runCommand(commandBuilder, workingDirectory, outputHandler);
 
         String revisionDescription = outputHandler.getOutput();
@@ -451,7 +452,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
     public CommitContext extractCommit(final File directory, final String targetRevision) throws  RepositoryException
     {
         final CommitOutputHandler coh = new CommitOutputHandler(Collections.<String>emptySet());
-        GitCommandBuilder commandBuilder = createCommandBuilder("log", "-1", "--format=" + CommitOutputHandler.LOG_COMMAND_FORMAT_STRING, targetRevision);
+        GitCommandBuilder commandBuilder = createCommandBuilder("log", "-1", ENCODING_OPTION, "--format=" + CommitOutputHandler.LOG_COMMAND_FORMAT_STRING, targetRevision);
         runCommand(commandBuilder, directory, coh);
         List<CommitContext> commits = coh.getExtractedCommits();
 
@@ -464,7 +465,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
 
     public Pair<List<CommitContext>, Integer> runLogCommand(final File cacheDirectory, final String lastVcsRevisionKey, final String targetRevision, @NotNull final Set<String> shallows, final int maxCommits) throws RepositoryException
     {
-        GitCommandBuilder commandBuilder = createCommandBuilder("log", "-p", "--name-only", "--format=" + CommitOutputHandler.LOG_COMMAND_FORMAT_STRING);
+        GitCommandBuilder commandBuilder = createCommandBuilder("log", "-p", "--name-only", ENCODING_OPTION, "--format=" + CommitOutputHandler.LOG_COMMAND_FORMAT_STRING);
         if (lastVcsRevisionKey.equals(targetRevision))
         {
             commandBuilder.append(targetRevision).append("-1");
@@ -486,6 +487,19 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
 
     static class GitStringOutputHandler extends StringOutputHandler implements GitOutputHandler
     {
+        public GitStringOutputHandler(final String encoding)
+        {
+            super(encoding);
+        }
+
+        /**
+         * @deprecated use ${@link #GitStringOutputHandler(String)} if you can set the output encoding
+         */
+        @Deprecated
+        public GitStringOutputHandler()
+        {
+        }
+
         @Override
         public String getStdout()
         {

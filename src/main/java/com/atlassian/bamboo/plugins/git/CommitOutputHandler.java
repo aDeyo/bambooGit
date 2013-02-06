@@ -55,12 +55,14 @@ public class CommitOutputHandler extends LineOutputHandler implements GitCommand
     // ---------------------------------------------------------------------------------------------------- Constructors
     public CommitOutputHandler(@NotNull Set<String> shallows)
     {
+        super(GitCommandProcessor.GIT_OUTPUT_ENCODING);
         this.shallows = shallows;
         maxCommitNumber = Integer.MAX_VALUE;
     }
 
     public CommitOutputHandler(@NotNull Set<String> shallows, int maxCommitNumber)
     {
+        super(GitCommandProcessor.GIT_OUTPUT_ENCODING);
         this.shallows = shallows;
         this.maxCommitNumber = maxCommitNumber;
     }
