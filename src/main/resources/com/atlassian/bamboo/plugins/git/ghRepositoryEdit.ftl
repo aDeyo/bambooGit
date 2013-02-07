@@ -1,8 +1,8 @@
 [#-- @ftlvariable name="repository" type="com.atlassian.bamboo.plugins.git.GitHubRepository" --]
 
-[@ww.textfield labelKey='repository.github.username' name='repository.github.username' required='true' /]
+[@ww.textfield labelKey='repository.github.username' name='repository.github.username' required=true /]
 [#if buildConfiguration.getString('repository.github.password')?has_content]
-    [@ww.checkbox labelKey='repository.password.change' toggle='true' name='temporary.github.password.change' /]
+    [@ww.checkbox labelKey='repository.password.change' toggle=true name='temporary.github.password.change' /]
     [@ui.bambooSection dependsOn='temporary.github.password.change']
         [@ww.password labelKey='repository.github.password' name='repository.github.temporary.password' /]
     [/@ui.bambooSection]
@@ -28,12 +28,14 @@
     [/#if]
 [/@ww.select]
 
-[@ww.checkbox labelKey='repository.github.useShallowClones' toggle='true' name='repository.github.useShallowClones' /]
+[@ww.checkbox labelKey='repository.github.useShallowClones' toggle=true name='repository.github.useShallowClones' /]
 [#if (plan.buildDefinition.branchIntegrationConfiguration.enabled)!false ]
     [@ui.bambooSection dependsOn='repository.github.useShallowClones']
         [@ui.messageBox type='info' titleKey='repository.git.messages.branchIntegration.shallowClonesWillBeDisabled' /]
     [/@ui.bambooSection]
 [/#if]
+
+[@ww.checkbox labelKey='repository.github.useRemoteAgentCache' toggle=false name='repository.github.useRemoteAgentCache' /]
 
 <script type="text/javascript">
 (function () {
