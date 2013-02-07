@@ -15,6 +15,7 @@ import com.atlassian.bamboo.utils.Pair;
 import com.atlassian.bamboo.v2.build.BuildRepositoryChanges;
 import com.atlassian.bamboo.v2.build.BuildRepositoryChangesImpl;
 import com.atlassian.sal.api.message.I18nResolver;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -36,8 +37,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 public class NativeGitOperationHelper extends AbstractGitOperationHelper implements GitOperationHelper
 {
@@ -47,6 +49,10 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
     // ------------------------------------------------------------------------------------------------- Type Properties
     protected SshProxyService sshProxyService;
     GitCommandProcessor gitCommandProcessor;
+
+    private final static CallableResultCache<ImmutableMap<String, String>> GET_REMOTE_REFS_CACHE =
+            CallableResultCache.build(CacheBuilder.newBuilder().expireAfterWrite(15, TimeUnit.SECONDS));
+
     // ---------------------------------------------------------------------------------------------------- Dependencies
     // ---------------------------------------------------------------------------------------------------- Constructors
 
@@ -403,7 +409,7 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
                 }
                 else
                 {
-                    final Pair<String, String> symbolicRefAndHash = resolveBranch(proxiedAccessData, sourceDirectory, targetBranchOrRevision);
+                    final Pair<String, String> symbolicRefAndHash = resolveBranch(accessData, proxiedAccessData, sourceDirectory, targetBranchOrRevision);
                     if (symbolicRefAndHash==null)
                     {
                         resolvedRefSpec=Constants.R_HEADS + "*"; //assume it's an SHA hash, so we need to fetch all
@@ -433,11 +439,12 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
     }
 
     @Nullable
-    private Pair<String, String> resolveBranch(final GitRepositoryAccessData accessData,
+    private Pair<String, String> resolveBranch(@NotNull final GitRepositoryAccessData directAccessData,
+                                               @Nullable final GitRepositoryAccessData proxiedAccessData,
                                                final File sourceDirectory,
                                                final String branch) throws RepositoryException
     {
-        final Map<String, String> remoteRefs = gitCommandProcessor.getRemoteRefs(sourceDirectory, accessData);
+        final ImmutableMap<String, String> remoteRefs = getRemoteRefs(sourceDirectory, directAccessData, proxiedAccessData);
         final Collection<String> candidates;
         if (StringUtils.isBlank(branch))
         {
@@ -466,24 +473,43 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
     @Override
     public List<VcsBranch> getOpenBranches(@NotNull final GitRepositoryAccessData repositoryData, final File workingDir) throws RepositoryException
     {
-        final GitRepositoryAccessData proxiedAccessData = adjustRepositoryAccess(repositoryData);
-        try
+        final ImmutableMap<String, String> refs = getRemoteRefs(workingDir, repositoryData, null);
+        final List<VcsBranch> openBranches = Lists.newArrayList();
+        for (final String refSymbolicName : refs.keySet())
         {
-            final Map<String, String> refs = gitCommandProcessor.getRemoteRefs(workingDir, proxiedAccessData);
-            final List<VcsBranch> openBranches = Lists.newArrayList();
-            for (final String refSymbolicName : refs.keySet())
+            if (refSymbolicName.startsWith(Constants.R_HEADS))
             {
-                if (refSymbolicName.startsWith(Constants.R_HEADS))
+                openBranches.add(new VcsBranchImpl(refSymbolicName.substring(Constants.R_HEADS.length())));
+            }
+        }
+        return openBranches;
+    }
+
+    private ImmutableMap<String, String> getRemoteRefs(final File workingDir, @NotNull final GitRepositoryAccessData accessData, @Nullable final GitRepositoryAccessData proxiedAccessData) throws RepositoryException
+    {
+        final Callable<ImmutableMap<String, String>> getRemoteRefs = new Callable<ImmutableMap<String, String>>()
+        {
+            @Override
+            public ImmutableMap<String, String> call() throws Exception
+            {
+                final boolean createNewProxySession = proxiedAccessData == null;
+                final GitRepositoryAccessData accessDataToUse = createNewProxySession ? adjustRepositoryAccess(accessData) : proxiedAccessData;
+
+                try
                 {
-                    openBranches.add(new VcsBranchImpl(refSymbolicName.substring(Constants.R_HEADS.length())));
+                    return gitCommandProcessor.getRemoteRefs(workingDir, accessDataToUse);
+                }
+                finally
+                {
+                    if (createNewProxySession)
+                    {
+                        closeProxy(accessDataToUse);
+                    }
                 }
             }
-            return openBranches;
-        }
-        finally
-        {
-            closeProxy(proxiedAccessData);
-        }
+        };
+
+        return GET_REMOTE_REFS_CACHE.call(getRemoteRefs, accessData.getRepositoryUrl(), accessData.getUsername(), accessData.getSshKey());
     }
 
     @NotNull
@@ -510,22 +536,14 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
     @Override
     public String obtainLatestRevision() throws RepositoryException
     {
-        final GitRepositoryAccessData proxiedAccessData = adjustRepositoryAccess(accessData);
-        try
+        final File workingDir = new File(".");
+        final Pair<String, String> branchRef = resolveBranch(accessData, null, workingDir, accessData.getBranch());
+        if (branchRef==null)
         {
-            final File workingDir = new File(".");
-            final Pair<String, String> branchRef = resolveBranch(proxiedAccessData, workingDir, accessData.getBranch());
-            if (branchRef==null)
-            {
-                throw new InvalidRepositoryException(i18nResolver.getText("repository.git.messages.cannotDetermineHead", PasswordMaskingUtils.mask(accessData.getRepositoryUrl(), accessData.getPassword()), accessData.getBranch()));
-            }
+            throw new InvalidRepositoryException(i18nResolver.getText("repository.git.messages.cannotDetermineHead", PasswordMaskingUtils.mask(accessData.getRepositoryUrl(), accessData.getPassword()), accessData.getBranch()));
+        }
 
-            return branchRef.second;
-        }
-        finally
-        {
-            closeProxy(proxiedAccessData);
-        }
+        return branchRef.second;
     }
 
     @Override
