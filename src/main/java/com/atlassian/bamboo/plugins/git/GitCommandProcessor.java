@@ -22,8 +22,8 @@ import com.google.common.base.Splitter;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.SystemUtils;
@@ -37,7 +37,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -344,19 +343,19 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
     }
 
     @NotNull
-    public Map<String, String> getRemoteRefs(File workingDirectory, GitRepositoryAccessData accessData) throws RepositoryException
+    public ImmutableMap<String, String> getRemoteRefs(@NotNull File workingDirectory, @NotNull GitRepositoryAccessData accessData) throws RepositoryException
     {
         final LineOutputHandlerImpl goh = new LineOutputHandlerImpl();
         final GitCommandBuilder commandBuilder = createCommandBuilder("ls-remote", accessData.getRepositoryUrl());
         runCommand(commandBuilder, workingDirectory, goh);
-        final Map<String, String> result = parseLsRemoteOutput(goh);
+        final ImmutableMap<String, String> result = parseLsRemoteOutput(goh);
         return result;
     }
 
     @NotNull
-    static Map<String, String> parseLsRemoteOutput(final LineOutputHandlerImpl goh)
+    static ImmutableMap<String, String> parseLsRemoteOutput(final LineOutputHandlerImpl goh)
     {
-        final Map<String, String> refs = Maps.newLinkedHashMap();
+        final ImmutableMap.Builder<String, String> refs = ImmutableMap.builder();
         for (final String ref : goh.getLines())
         {
             if (ref.contains("^{}"))
@@ -369,7 +368,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
                 refs.put(matcher.group(2), matcher.group(1));
             }
         }
-        return refs;
+        return refs.build();
     }
 
     public GitCommandBuilder createCommandBuilder(String... commands)
