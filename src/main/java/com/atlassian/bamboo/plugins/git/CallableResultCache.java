@@ -3,6 +3,7 @@ package com.atlassian.bamboo.plugins.git;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
+import com.google.common.cache.CacheStats;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -69,6 +70,11 @@ public class CallableResultCache<T>
         final CacheLoader<CachedOperationId<T>, T> loader = loader();
         final Cache<CachedOperationId<T>, T> cache = builder.build(loader);
         return new CallableResultCache<T>(cache);
+    }
+
+    public CacheStats stats()
+    {
+        return cache.stats();
     }
 
     public T call(@NotNull Callable<T> callable, Object... keys)

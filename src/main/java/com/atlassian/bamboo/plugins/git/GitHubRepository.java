@@ -78,47 +78,47 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
     public void setBuildDirectoryManager(BuildDirectoryManager buildDirectoryManager)
     {
         super.setBuildDirectoryManager(buildDirectoryManager);
-        gitRepository.setBuildDirectoryManager(buildDirectoryManager);
+        getGitRepository().setBuildDirectoryManager(buildDirectoryManager);
     }
 
     public void setBuildLoggerManager(BuildLoggerManager buildLoggerManager)
     {
         super.setBuildLoggerManager(buildLoggerManager);
-        gitRepository.setBuildLoggerManager(buildLoggerManager);
+        getGitRepository().setBuildLoggerManager(buildLoggerManager);
     }
 
     public void setI18nResolver(I18nResolver i18nResolver)
     {
         this.i18nResolver = i18nResolver;
-        gitRepository.setI18nResolver(i18nResolver);
+        getGitRepository().setI18nResolver(i18nResolver);
     }
 
     public void setEncryptionService(EncryptionService encryptionService)
     {
         this.encryptionService = encryptionService;
-        gitRepository.setEncryptionService(encryptionService);
+        getGitRepository().setEncryptionService(encryptionService);
     }
 
     @Override
     public void setCustomVariableContext(CustomVariableContext customVariableContext)
     {
         super.setCustomVariableContext(customVariableContext);
-        gitRepository.setCustomVariableContext(customVariableContext);
+        getGitRepository().setCustomVariableContext(customVariableContext);
     }
 
     public void setCapabilityContext(final CapabilityContext capabilityContext)
     {
-        gitRepository.setCapabilityContext(capabilityContext);
+        getGitRepository().setCapabilityContext(capabilityContext);
     }
 
     public void setSshProxyService(SshProxyService sshProxyService)
     {
-        gitRepository.setSshProxyService(sshProxyService);
+        getGitRepository().setSshProxyService(sshProxyService);
     }
 
     public void setBranchIntegrationHelper(final BranchIntegrationHelper branchIntegrationHelper)
     {
-        gitRepository.setBranchIntegrationHelper(branchIntegrationHelper);
+        getGitRepository().setBranchIntegrationHelper(branchIntegrationHelper);
     }
 
 
@@ -126,7 +126,7 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
     public void setTemplateRenderer(TemplateRenderer templateRenderer)
     {
         super.setTemplateRenderer(templateRenderer);
-        gitRepository.setTemplateRenderer(templateRenderer);
+        getGitRepository().setTemplateRenderer(templateRenderer);
     }
 
     // ---------------------------------------------------------------------------------------------------- Constructors
@@ -234,33 +234,33 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
     @NotNull
     public BuildRepositoryChanges collectChangesForRevision(@NotNull PlanKey planKey, @NotNull String targetRevision) throws RepositoryException
     {
-        return gitRepository.collectChangesForRevision(planKey, targetRevision);
+        return getGitRepository().collectChangesForRevision(planKey, targetRevision);
     }
 
     @NotNull
     public BuildRepositoryChanges collectChangesSinceLastBuild(@NotNull String planKey, @Nullable String lastVcsRevisionKey) throws RepositoryException
     {
-        return gitRepository.collectChangesSinceLastBuild(planKey, lastVcsRevisionKey);
+        return getGitRepository().collectChangesSinceLastBuild(planKey, lastVcsRevisionKey);
     }
 
     @NotNull
     public String retrieveSourceCode(@NotNull BuildContext buildContext, @Nullable final String vcsRevision) throws RepositoryException
     {
-        return gitRepository.retrieveSourceCode(buildContext, vcsRevision, getSourceCodeDirectory(buildContext.getPlanResultKey().getPlanKey()));
+        return getGitRepository().retrieveSourceCode(buildContext, vcsRevision, getSourceCodeDirectory(buildContext.getPlanResultKey().getPlanKey()));
     }
 
     @NotNull
     @Override
     public String retrieveSourceCode(@NotNull final BuildContext buildContext, @Nullable final String vcsRevisionKey, @NotNull final File sourceDirectory) throws RepositoryException
     {
-        return gitRepository.retrieveSourceCode(buildContext, vcsRevisionKey, sourceDirectory);
+        return getGitRepository().retrieveSourceCode(buildContext, vcsRevisionKey, sourceDirectory);
     }
 
     @NotNull
     @Override
     public String retrieveSourceCode(@NotNull final BuildContext buildContext, @Nullable final String vcsRevisionKey, @NotNull final File sourceDirectory, int depth) throws RepositoryException
     {
-        return gitRepository.retrieveSourceCode(buildContext, vcsRevisionKey, sourceDirectory, depth);
+        return getGitRepository().retrieveSourceCode(buildContext, vcsRevisionKey, sourceDirectory, depth);
     }
 
     // -------------------------------------------------------------------------------------------------- Public Methods
@@ -318,20 +318,20 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
     @Override
     public List<VcsBranch> getOpenBranches(@Nullable final String context) throws RepositoryException
     {
-        return gitRepository.getOpenBranches(context);
+        return getGitRepository().getOpenBranches(context);
     }
 
     @Override
     @NotNull
     public VcsBranch getVcsBranch()
     {
-        return gitRepository.getVcsBranch();
+        return getGitRepository().getVcsBranch();
     }
 
     @Override
     public void setVcsBranch(@NotNull final VcsBranch vcsBranch)
     {
-        gitRepository.setVcsBranch(vcsBranch);
+        getGitRepository().setVcsBranch(vcsBranch);
     }
 
     @Override
@@ -340,7 +340,7 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
         switch (cachableOperation)
         {
             case BRANCH_DETECTION:
-                return new CacheId(this, gitRepository.getAccessData().getRepositoryUrl());
+                return new CacheId(this, getGitRepository().getAccessData().getRepositoryUrl());
         }
         return null;
     }
@@ -354,44 +354,44 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
     @Override
     public CommitContext getLastCommit() throws RepositoryException
     {
-        return gitRepository.getLastCommit();
+        return getGitRepository().getLastCommit();
     }
 
     @Override
     public CommitContext getFirstCommit() throws RepositoryException
     {
-        return gitRepository.getFirstCommit();
+        return getGitRepository().getFirstCommit();
     }
 
     @Override
     public boolean mergeWorkspaceWith(@NotNull final BuildContext buildContext, @NotNull final File file, @NotNull final String s) throws RepositoryException
     {
-        return gitRepository.mergeWorkspaceWith(buildContext, file, s);
+        return getGitRepository().mergeWorkspaceWith(buildContext, file, s);
     }
 
     @Override
     public boolean isMergingSupported()
     {
-        return gitRepository.isMergingSupported();
+        return getGitRepository().isMergingSupported();
     }
 
     @Override
     public void pushRevision(@NotNull final File file, @Nullable final String s) throws RepositoryException
     {
-        gitRepository.pushRevision(file, s);
+        getGitRepository().pushRevision(file, s);
     }
 
     @NotNull
     @Override
     public String commit(@NotNull final File file, @NotNull final String s) throws RepositoryException
     {
-        return gitRepository.commit(file, s);
+        return getGitRepository().commit(file, s);
     }
 
     public String getOptionDescription()
     {
         String capabilitiesLink = ServletActionContext.getRequest().getContextPath() + "/admin/agent/configureSharedLocalCapabilities.action";
-        return i18nResolver.getText("repository.git.description", gitRepository.getGitCapability(), capabilitiesLink);
+        return i18nResolver.getText("repository.git.description", getGitRepository().getGitCapability(), capabilitiesLink);
     }
 
     public GitHubRepositoryAccessData getAccessData()
@@ -403,7 +403,7 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
     {
         this.accessData = accessData;
 
-        gitRepository.setAccessData(GitRepositoryAccessData.builder(gitRepository.getAccessData())
+        getGitRepository().setAccessData(GitRepositoryAccessData.builder(getGitRepository().getAccessData())
                                             .repositoryUrl("https://github.com/" + accessData.getRepository() + ".git")
                                             .username(accessData.getUsername())
                                             .password(accessData.getPassword())
@@ -417,6 +417,11 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
                                             .verboseLogs(accessData.isVerboseLogs())
                                             .build());
 
-        gitRepository.setVcsBranch(new VcsBranchImpl(accessData.getBranch()));
+        getGitRepository().setVcsBranch(new VcsBranchImpl(accessData.getBranch()));
+    }
+
+    GitRepository getGitRepository()
+    {
+        return gitRepository;
     }
 }

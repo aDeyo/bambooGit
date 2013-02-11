@@ -15,6 +15,7 @@ public final class GitRepositoryAccessData implements Serializable
     private String sshPassphrase;
     private GitAuthenticationType authenticationType;
     private boolean useShallowClones;
+    private boolean useRemoteAgentCache;
     private boolean useSubmodules;
     private int commandTimeout;
     private boolean verboseLogs;
@@ -31,6 +32,7 @@ public final class GitRepositoryAccessData implements Serializable
         private String sshPassphrase;
         private GitAuthenticationType authenticationType;
         private boolean useShallowClones;
+        private boolean useRemoteAgentCache;
         private boolean useSubmodules;
         private int commandTimeout;
         private boolean verboseLogs;
@@ -46,6 +48,7 @@ public final class GitRepositoryAccessData implements Serializable
             this.authenticationType = gitRepositoryAccessData.authenticationType;
             this.useShallowClones = gitRepositoryAccessData.useShallowClones;
             this.useSubmodules = gitRepositoryAccessData.useSubmodules;
+            this.useRemoteAgentCache = gitRepositoryAccessData.useRemoteAgentCache;
             this.commandTimeout = gitRepositoryAccessData.commandTimeout;
             this.verboseLogs = gitRepositoryAccessData.verboseLogs;
             return this;
@@ -99,6 +102,12 @@ public final class GitRepositoryAccessData implements Serializable
             return this;
         }
 
+        public Builder useRemoteAgentCache(final boolean useRemoteAgentCache)
+        {
+            this.useRemoteAgentCache = useRemoteAgentCache;
+            return this;
+        }
+
         public Builder useSubmodules(final boolean useSubmodules)
         {
             this.useSubmodules = useSubmodules;
@@ -128,6 +137,7 @@ public final class GitRepositoryAccessData implements Serializable
             data.sshPassphrase = this.sshPassphrase;
             data.authenticationType = this.authenticationType;
             data.useShallowClones = this.useShallowClones;
+            data.useRemoteAgentCache = this.useRemoteAgentCache;
             data.useSubmodules = this.useSubmodules;
             data.commandTimeout = this.commandTimeout;
             data.verboseLogs = this.verboseLogs;
@@ -198,6 +208,11 @@ public final class GitRepositoryAccessData implements Serializable
     public boolean isUseShallowClones()
     {
         return useShallowClones;
+    }
+
+    public boolean isUseRemoteAgentCache()
+    {
+        return useRemoteAgentCache;
     }
 
     public boolean isUseSubmodules()

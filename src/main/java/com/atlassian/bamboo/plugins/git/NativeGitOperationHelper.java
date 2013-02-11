@@ -509,7 +509,9 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
             }
         };
 
-        return GET_REMOTE_REFS_CACHE.call(getRemoteRefs, accessData.getRepositoryUrl(), accessData.getUsername(), accessData.getSshKey());
+        final ImmutableMap<String, String> callResult = GET_REMOTE_REFS_CACHE.call(getRemoteRefs, accessData.getRepositoryUrl(), accessData.getUsername(), accessData.getSshKey());
+        log.info(GET_REMOTE_REFS_CACHE.stats());
+        return callResult;
     }
 
     @NotNull

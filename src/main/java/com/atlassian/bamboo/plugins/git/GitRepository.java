@@ -15,6 +15,8 @@ import com.atlassian.bamboo.repository.AbstractStandaloneRepository;
 import com.atlassian.bamboo.repository.AdvancedConfigurationAwareRepository;
 import com.atlassian.bamboo.repository.BranchDetectionCapableRepository;
 import com.atlassian.bamboo.repository.BranchMergingAwareRepository;
+import com.atlassian.bamboo.repository.CacheDescription;
+import com.atlassian.bamboo.repository.CacheHandler;
 import com.atlassian.bamboo.repository.CacheId;
 import com.atlassian.bamboo.repository.CachingAwareRepository;
 import com.atlassian.bamboo.repository.CustomVariableProviderRepository;
@@ -47,6 +49,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.opensymphony.webwork.ServletActionContext;
+import com.opensymphony.xwork.ValidationAware;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -62,6 +65,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -78,7 +82,8 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                                                                            BranchDetectionCapableRepository,
                                                                            PushCapableRepository,
                                                                            CachingAwareRepository,
-                                                                           BranchMergingAwareRepository
+                                                                           BranchMergingAwareRepository, 
+                                                                           CacheHandler
 {
     // ------------------------------------------------------------------------------------------------------- Constants
 
@@ -91,6 +96,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     private static final String REPOSITORY_GIT_SSH_KEY = "repository.git.ssh.key";
     private static final String REPOSITORY_GIT_SSH_PASSPHRASE = "repository.git.ssh.passphrase";
     private static final String REPOSITORY_GIT_USE_SHALLOW_CLONES = "repository.git.useShallowClones";
+    private static final String REPOSITORY_GIT_USE_REMOTE_AGENT_CACHE = "repository.git.useRemoteAgentCache";
     private static final String REPOSITORY_GIT_USE_SUBMODULES = "repository.git.useSubmodules";
     private static final String REPOSITORY_GIT_MAVEN_PATH = "repository.git.maven.path";
     private static final String REPOSITORY_GIT_COMMAND_TIMEOUT = "repository.git.commandTimeout";
@@ -123,6 +129,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     // ---------------------------------------------------------------------------------------------------- Dependencies
     private transient CapabilityContext capabilityContext;
     private transient I18nResolver i18nResolver;
+    private transient GitCacheHandler gitCacheHandler;
     private transient SshProxyService sshProxyService;
     private transient EncryptionService encryptionService;
     // ---------------------------------------------------------------------------------------------------- Constructors
@@ -302,7 +309,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
             final String fetchRevision = substitutedAccessData.getBranch();
             final String previousRevision = helper.getRevisionIfExists(sourceDirectory, Constants.HEAD);
 
-            if (isOnLocalAgent())
+            if (isOnLocalAgent() || substitutedAccessData.isUseRemoteAgentCache())
             {
                 final File cacheDirectory = getCacheDirectory(substitutedAccessData);
                 return GitCacheDirectory.getCacheLock(cacheDirectory).withLock(new Callable<String>()
@@ -454,7 +461,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
 
         try
         {
-            if (isOnLocalAgent())
+            if (isOnLocalAgent() || getAccessData().isUseRemoteAgentCache())
             {
                 GitCacheDirectory.getCacheLock(cacheDirectory).withLock(new Callable<Void>()
                 {
@@ -559,6 +566,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
         buildConfiguration.setProperty(REPOSITORY_GIT_COMMAND_TIMEOUT, Integer.valueOf(DEFAULT_COMMAND_TIMEOUT_IN_MINUTES));
         buildConfiguration.clearTree(REPOSITORY_GIT_VERBOSE_LOGS);
         buildConfiguration.setProperty(REPOSITORY_GIT_USE_SHALLOW_CLONES, true);
+        buildConfiguration.setProperty(REPOSITORY_GIT_USE_REMOTE_AGENT_CACHE, false);
         buildConfiguration.clearTree(REPOSITORY_GIT_USE_SUBMODULES);
     }
 
@@ -610,6 +618,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                 .sshPassphrase(config.getString(REPOSITORY_GIT_SSH_PASSPHRASE))
                 .authenticationType(safeParseAuthenticationType(config.getString(REPOSITORY_GIT_AUTHENTICATION_TYPE)))
                 .useShallowClones(config.getBoolean(REPOSITORY_GIT_USE_SHALLOW_CLONES))
+                .useRemoteAgentCache(config.getBoolean(REPOSITORY_GIT_USE_REMOTE_AGENT_CACHE, false))
                 .useSubmodules(config.getBoolean(REPOSITORY_GIT_USE_SUBMODULES, false))
                 .commandTimeout(config.getInt(REPOSITORY_GIT_COMMAND_TIMEOUT, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES))
                 .verboseLogs(config.getBoolean(REPOSITORY_GIT_VERBOSE_LOGS, false))
@@ -632,6 +641,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
         configuration.setProperty(REPOSITORY_GIT_SSH_PASSPHRASE, accessData.getSshPassphrase());
         configuration.setProperty(REPOSITORY_GIT_AUTHENTICATION_TYPE, accessData.getAuthenticationTypeString());
         configuration.setProperty(REPOSITORY_GIT_USE_SHALLOW_CLONES, accessData.isUseShallowClones());
+        configuration.setProperty(REPOSITORY_GIT_USE_REMOTE_AGENT_CACHE, accessData.isUseRemoteAgentCache());
         configuration.setProperty(REPOSITORY_GIT_USE_SUBMODULES, accessData.isUseSubmodules());
         configuration.setProperty(REPOSITORY_GIT_COMMAND_TIMEOUT, accessData.getCommandTimeout());
         configuration.setProperty(REPOSITORY_GIT_VERBOSE_LOGS, accessData.isVerboseLogs());
@@ -918,9 +928,50 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     {
         return accessData;
     }
+    public void setGitCacheHandler(final GitCacheHandler gitCacheHandler)
+    {
+        this.gitCacheHandler = gitCacheHandler;
+    }
 
     public void setAccessData(final GitRepositoryAccessData accessData)
     {
         this.accessData = accessData;
+    }
+    @NotNull
+    @Override
+    public String getHandlerDescription()
+    {
+        return i18nResolver.getText("manageCaches.git.description");
+    }
+
+    /**
+     * {@inheritDoc}
+     * Handles both Git and GitHub repositories.
+     */
+    @NotNull
+    @Override
+    public Collection<CacheDescription> getCacheDescriptions()
+    {
+        return gitCacheHandler.getCacheDescriptions();
+    }
+
+    /**
+     * {@inheritDoc}
+     * Handles both Git and GitHub repositories.
+     */
+    @Override
+    public void deleteCaches(@NotNull final Collection<String> strings, @NotNull final ValidationAware validationAware)
+    {
+        gitCacheHandler.deleteCaches(strings, validationAware);
+    }
+
+    /**
+     * {@inheritDoc}
+     * Handles both Git and GitHub repositories.
+     */
+    @Override
+    public void deleteUnusedCaches(@NotNull final ValidationAware validationAware)
+    {
+        gitCacheHandler.deleteUnusedCaches(validationAware);
     }
 }

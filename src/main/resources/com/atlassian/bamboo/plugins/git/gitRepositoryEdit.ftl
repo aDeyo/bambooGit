@@ -2,14 +2,14 @@
 [#-- @ftlvariable name="plan" type="com.atlassian.bamboo.plan.Plan" --]
 [#-- @ftlvariable name="repository" type="com.atlassian.bamboo.plugins.git.GitRepository" --]
 [@ui.bambooSection]
-    [@ww.textfield labelKey='repository.git.repositoryUrl' name='repository.git.repositoryUrl' required='true' helpKey='git.fields' /]
+    [@ww.textfield labelKey='repository.git.repositoryUrl' name='repository.git.repositoryUrl' required=true helpKey='git.fields' /]
 
     [@ww.textfield labelKey='repository.git.branch' name='repository.git.branch' /]
 
     [@ww.select
         labelKey='repository.git.authenticationType'
         name='repository.git.authenticationType'
-        toggle='true'
+        toggle=true
         list=repository.authenticationTypes
         listKey='name'
         listValue='label']
@@ -19,7 +19,7 @@
         [@ww.textfield labelKey='repository.git.username' name='repository.git.username' /]
 
         [#if buildConfiguration.getString('repository.git.password')?has_content]
-            [@ww.checkbox labelKey='repository.password.change' toggle='true' name='temporary.git.password.change' /]
+            [@ww.checkbox labelKey='repository.password.change' toggle=true name='temporary.git.password.change' /]
             [@ui.bambooSection dependsOn='temporary.git.password.change']
                 [@ww.password labelKey='repository.git.password' name='temporary.git.password' required='false' /]
             [/@ui.bambooSection]
@@ -30,31 +30,33 @@
     [/@ui.bambooSection]
     [@ui.bambooSection dependsOn='repository.git.authenticationType' showOn='SSH_KEYPAIR']
         [#if buildConfiguration.getString('repository.git.ssh.key')?has_content]
-            [@ww.checkbox labelKey='repository.git.ssh.key.change' toggle='true' name='temporary.git.ssh.key.change' /]
+            [@ww.checkbox labelKey='repository.git.ssh.key.change' toggle=true name='temporary.git.ssh.key.change' /]
             [@ui.bambooSection dependsOn='temporary.git.ssh.key.change']
                 [@ww.file labelKey='repository.git.ssh.key' name='temporary.git.ssh.keyfile' /]
             [/@ui.bambooSection]
         [#else]
-            [@ww.hidden name='temporary.git.ssh.key.change' value='true' /]
+            [@ww.hidden name='temporary.git.ssh.key.change' value='true'/]
             [@ww.file labelKey='repository.git.ssh.key' name='temporary.git.ssh.keyfile' /]
         [/#if]
 
         [#if buildConfiguration.getString('repository.git.ssh.passphrase')?has_content]
-            [@ww.checkbox labelKey='repository.passphrase.change' toggle='true' name='temporary.git.ssh.passphrase.change' /]
+            [@ww.checkbox labelKey='repository.passphrase.change' toggle=true name='temporary.git.ssh.passphrase.change' /]
             [@ui.bambooSection dependsOn='temporary.git.ssh.passphrase.change']
                 [@ww.password labelKey='repository.git.ssh.passphrase' name='temporary.git.ssh.passphrase' /]
             [/@ui.bambooSection]
         [#else]
-            [@ww.hidden name='temporary.git.ssh.passphrase.change' value="true" /]
+            [@ww.hidden name='temporary.git.ssh.passphrase.change' value='true' /]
             [@ww.password labelKey='repository.git.ssh.passphrase' name='temporary.git.ssh.passphrase' /]
         [/#if]
     [/@ui.bambooSection]
 
-    [@ww.checkbox labelKey='repository.git.useShallowClones' toggle='true' name='repository.git.useShallowClones' /]
+    [@ww.checkbox labelKey='repository.git.useShallowClones' toggle=true name='repository.git.useShallowClones' /]
     [@ui.bambooSection dependsOn='repository.git.useShallowClones']
         [#if (plan.buildDefinition.branchIntegrationConfiguration.enabled)!false ]
             [@ui.messageBox type='info' titleKey='repository.git.messages.branchIntegration.shallowClonesWillBeDisabled' /]
         [/#if]
     [/@ui.bambooSection]
+
+    [@ww.checkbox labelKey='repository.git.useRemoteAgentCache' toggle=false name='repository.git.useRemoteAgentCache' /]
 
 [/@ui.bambooSection]

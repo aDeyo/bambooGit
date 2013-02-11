@@ -3,6 +3,7 @@ package com.atlassian.bamboo.plugins.git;
 import com.atlassian.util.concurrent.Function;
 import com.atlassian.util.concurrent.ManagedLock;
 import com.atlassian.util.concurrent.ManagedLocks;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.CharEncoding;
 import org.apache.log4j.Logger;
@@ -28,15 +29,28 @@ public class GitCacheDirectory
     {
     }
 
+    /**
+     * @param workingDirectory
+     * @return the root for all git cache directories.
+     */
+    @NotNull
+    public static File getCacheDirectoryRoot(@NotNull final File workingDirectory)
+    {
+        return new File(workingDirectory, GIT_REPOSITORY_CACHE_DIRECTORY);
+    }
+
     @NotNull
     static File getCacheDirectory(@NotNull final File workingDirectory, @NotNull final GitRepositoryAccessData repositoryData)
     {
-        String repositorySha = repositoryData.isUseShallowClones() ?
+        return new File(getCacheDirectoryRoot(workingDirectory), calculateRepositorySha(repositoryData));
+    }
+
+    @VisibleForTesting
+    static String calculateRepositorySha(@NotNull final GitRepositoryAccessData repositoryData)
+    {
+        return repositoryData.isUseShallowClones() ?
                 calculateAggregateSha(repositoryData.getRepositoryUrl(), repositoryData.getUsername(), repositoryData.getBranch()) :
                 calculateAggregateSha(repositoryData.getRepositoryUrl(), repositoryData.getUsername());
-
-        File cacheDirectory = new File(workingDirectory, GIT_REPOSITORY_CACHE_DIRECTORY);
-        return new File(cacheDirectory, repositorySha);
     }
     
     static String calculateAggregateSha(String... params)
