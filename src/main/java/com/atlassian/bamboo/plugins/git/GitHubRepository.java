@@ -189,7 +189,7 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
                 .repository(config.getString(REPOSITORY_GITHUB_REPOSITORY))
                 .username(config.getString(REPOSITORY_GITHUB_USERNAME))
                 .password(config.getString(REPOSITORY_GITHUB_PASSWORD))
-                .branch(config.getString(REPOSITORY_GITHUB_BRANCH))
+                .branch(new VcsBranchImpl(config.getString(REPOSITORY_GITHUB_BRANCH)))
                 .useShallowClones(config.getBoolean(REPOSITORY_GITHUB_USE_SHALLOW_CLONES))
                 .useSubmodules(config.getBoolean(REPOSITORY_GITHUB_USE_SUBMODULES))
                 .commandTimeout(config.getInt(REPOSITORY_GITHUB_COMMAND_TIMEOUT, GitRepository.DEFAULT_COMMAND_TIMEOUT_IN_MINUTES))
@@ -279,7 +279,7 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
 
     public String getBranch()
     {
-        return accessData.getBranch();
+        return accessData.getVcsBranch().getName();
     }
 
     public boolean isUseShallowClones()
@@ -325,13 +325,13 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
     @NotNull
     public VcsBranch getVcsBranch()
     {
-        return getGitRepository().getVcsBranch();
+        return accessData.getVcsBranch();
     }
 
     @Override
     public void setVcsBranch(@NotNull final VcsBranch vcsBranch)
     {
-        getGitRepository().setVcsBranch(vcsBranch);
+        setAccessData(GitHubRepositoryAccessData.builder(accessData).branch(vcsBranch).build());
     }
 
     @Override
@@ -399,25 +399,23 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
         return accessData;
     }
 
-    public void setAccessData(GitHubRepositoryAccessData accessData)
+    public void setAccessData(GitHubRepositoryAccessData gitHubAccessData)
     {
-        this.accessData = accessData;
+        this.accessData = gitHubAccessData;
 
         getGitRepository().setAccessData(GitRepositoryAccessData.builder(getGitRepository().getAccessData())
-                                            .repositoryUrl("https://github.com/" + accessData.getRepository() + ".git")
-                                            .username(accessData.getUsername())
-                                            .password(accessData.getPassword())
-                                            .branch(accessData.getBranch())
+                                            .repositoryUrl("https://github.com/" + gitHubAccessData.getRepository() + ".git")
+                                            .username(gitHubAccessData.getUsername())
+                                            .password(gitHubAccessData.getPassword())
+                                            .branch(gitHubAccessData.getVcsBranch())
                                             .sshKey(null)
                                             .sshPassphrase(null)
                                             .authenticationType(GitAuthenticationType.PASSWORD)
-                                            .useShallowClones(accessData.isUseShallowClones())
-                                            .useSubmodules(accessData.isUseSubmodules())
-                                            .commandTimeout(accessData.getCommandTimeout())
-                                            .verboseLogs(accessData.isVerboseLogs())
+                                            .useShallowClones(gitHubAccessData.isUseShallowClones())
+                                            .useSubmodules(gitHubAccessData.isUseSubmodules())
+                                            .commandTimeout(gitHubAccessData.getCommandTimeout())
+                                            .verboseLogs(gitHubAccessData.isVerboseLogs())
                                             .build());
-
-        getGitRepository().setVcsBranch(new VcsBranchImpl(accessData.getBranch()));
     }
 
     GitRepository getGitRepository()

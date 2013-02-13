@@ -118,8 +118,6 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     private static final Logger log = Logger.getLogger(GitRepository.class);
     private BranchIntegrationHelper branchIntegrationHelper;
 
-    private VcsBranch branch;
-
     private GitRepositoryAccessData accessData = new GitRepositoryAccessData();
 
     // Maven 2 import
@@ -435,14 +433,13 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     @NotNull
     public VcsBranch getVcsBranch()
     {
-        return branch;
+        return accessData.getVcsBranch();
     }
 
     @Override
     public void setVcsBranch(@NotNull final VcsBranch branch)
     {
-        this.branch = branch;
-        this.accessData = GitRepositoryAccessData.builder(accessData).branch(branch.getName()).build();
+        this.accessData = GitRepositoryAccessData.builder(accessData).branch(branch).build();
     }
 
     @Override
@@ -609,11 +606,13 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     public void populateFromConfig(@NotNull HierarchicalConfiguration config)
     {
         super.populateFromConfig(config);
+
+        final VcsBranchImpl branch = new VcsBranchImpl(StringUtils.defaultIfEmpty(config.getString(REPOSITORY_GIT_BRANCH, ""), "master"));
         accessData = GitRepositoryAccessData.builder()
                 .repositoryUrl(StringUtils.trimToEmpty(config.getString(REPOSITORY_GIT_REPOSITORY_URL)))
                 .username(config.getString(REPOSITORY_GIT_USERNAME, ""))
                 .password(config.getString(REPOSITORY_GIT_PASSWORD))
-                .branch(config.getString(REPOSITORY_GIT_BRANCH, ""))
+                .branch(branch)
                 .sshKey(config.getString(REPOSITORY_GIT_SSH_KEY, ""))
                 .sshPassphrase(config.getString(REPOSITORY_GIT_SSH_PASSPHRASE))
                 .authenticationType(safeParseAuthenticationType(config.getString(REPOSITORY_GIT_AUTHENTICATION_TYPE)))
@@ -624,7 +623,6 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                 .verboseLogs(config.getBoolean(REPOSITORY_GIT_VERBOSE_LOGS, false))
                 .build();
 
-        branch = new VcsBranchImpl(StringUtils.defaultIfEmpty(accessData.getBranch(), "master"));
         pathToPom = config.getString(REPOSITORY_GIT_MAVEN_PATH);
     }
 
@@ -636,7 +634,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
         configuration.setProperty(REPOSITORY_GIT_REPOSITORY_URL, accessData.getRepositoryUrl());
         configuration.setProperty(REPOSITORY_GIT_USERNAME, accessData.getUsername());
         configuration.setProperty(REPOSITORY_GIT_PASSWORD, accessData.getPassword());
-        configuration.setProperty(REPOSITORY_GIT_BRANCH, accessData.getBranch());
+        configuration.setProperty(REPOSITORY_GIT_BRANCH, accessData.getVcsBranch().getName());
         configuration.setProperty(REPOSITORY_GIT_SSH_KEY, accessData.getSshKey());
         configuration.setProperty(REPOSITORY_GIT_SSH_PASSPHRASE, accessData.getSshPassphrase());
         configuration.setProperty(REPOSITORY_GIT_AUTHENTICATION_TYPE, accessData.getAuthenticationTypeString());

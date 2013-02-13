@@ -1,5 +1,7 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.bamboo.plan.branch.VcsBranch;
+import com.atlassian.bamboo.plan.branch.VcsBranchImpl;
 import com.atlassian.bamboo.ssh.ProxyRegistrationInfo;
 import org.jetbrains.annotations.NotNull;
 
@@ -8,7 +10,7 @@ import java.io.Serializable;
 public final class GitHubRepositoryAccessData implements Serializable
 {
     private String repository;
-    private String branch;
+    private VcsBranch branch;
     private String username;
     private String password;
     private boolean useShallowClones;
@@ -21,7 +23,7 @@ public final class GitHubRepositoryAccessData implements Serializable
     public static final class Builder
     {
         private String repository;
-        private String branch;
+        private VcsBranch branch;
         private String username;
         private String password;
         private boolean useShallowClones;
@@ -48,9 +50,20 @@ public final class GitHubRepositoryAccessData implements Serializable
             return this;
         }
 
+        /**
+         *
+         * @deprecated use ${@link #branch(com.atlassian.bamboo.plan.branch.VcsBranch)} instead
+         */
+        @Deprecated
         public Builder branch(final String branch)
         {
-            this.branch = branch;
+            this.branch = new VcsBranchImpl(branch);
+            return this;
+        }
+
+        public Builder branch(VcsBranch vcsBranch)
+        {
+            this.branch = vcsBranch;
             return this;
         }
 
@@ -120,7 +133,16 @@ public final class GitHubRepositoryAccessData implements Serializable
         return repository;
     }
 
+    /**
+       @deprecated use ${@link #getVcsBranch} instead
+     */
+    @Deprecated
     public String getBranch()
+    {
+        return branch.getName();
+    }
+
+    public VcsBranch getVcsBranch()
     {
         return branch;
     }

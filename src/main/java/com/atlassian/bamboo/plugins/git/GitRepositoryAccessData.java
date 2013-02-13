@@ -1,5 +1,7 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.bamboo.plan.branch.VcsBranch;
+import com.atlassian.bamboo.plan.branch.VcsBranchImpl;
 import com.atlassian.bamboo.ssh.ProxyRegistrationInfo;
 import org.jetbrains.annotations.NotNull;
 
@@ -8,7 +10,7 @@ import java.io.Serializable;
 public final class GitRepositoryAccessData implements Serializable
 {
     private String repositoryUrl;
-    private String branch;
+    private VcsBranch branch;
     private String username;
     private String password;
     private String sshKey;
@@ -25,7 +27,7 @@ public final class GitRepositoryAccessData implements Serializable
     public static final class Builder
     {
         private String repositoryUrl;
-        private String branch;
+        private VcsBranch branch;
         private String username;
         private String password;
         private String sshKey;
@@ -60,7 +62,14 @@ public final class GitRepositoryAccessData implements Serializable
             return this;
         }
 
+        @Deprecated
         public Builder branch(final String branch)
+        {
+            this.branch = new VcsBranchImpl(branch);
+            return this;
+        }
+
+        public Builder branch(final VcsBranch branch)
         {
             this.branch = branch;
             return this;
@@ -165,7 +174,13 @@ public final class GitRepositoryAccessData implements Serializable
         this.repositoryUrl = repositoryUrl;
     }
 
+    @Deprecated
     public String getBranch()
+    {
+        return branch.getName();
+    }
+
+    public VcsBranch getVcsBranch()
     {
         return branch;
     }
