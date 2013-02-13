@@ -1,5 +1,7 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.bamboo.plan.branch.VcsBranch;
+import com.atlassian.bamboo.plan.branch.VcsBranchImpl;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -17,51 +19,59 @@ public class GitCacheDirectoryTest extends GitAbstractTest
     Object[][] fieldInfluenceOnCacheLocationNonShallow()
     {
         return new Object[][] {
-                {"repositoryUrl", true},
-                {"username", true},
+                {"repositoryUrl", true, null},
+                {"username", true, null},
 
-                {"branch", false},
-                {"password", false},
-                {"sshKey", false},
-                {"sshPassphrase", false},
+                {"branch", false, VcsBranch.class},
+                {"password", false, null},
+                {"sshKey", false, null},
+                {"sshPassphrase", false, null},
         };
     }
 
     @Test(dataProvider = "fieldInfluenceOnCacheLocationNonShallow")
-    public void testFieldInfluenceOnCacheLocatonNonShallow(String field, boolean different) throws Exception
+    public void testFieldInfluenceOnCacheLocatonNonShallow(final String field, final boolean different, final Class<?> clazz) throws Exception
     {
-        doTestFieldInfluenceOnCacheLocaton(field, false, different);
+        doTestFieldInfluenceOnCacheLocaton(field, false, different, clazz);
     }
 
     @DataProvider
     Object[][] fieldInfluenceOnCacheLocationShallow()
     {
         return new Object[][] {
-                {"repositoryUrl", true},
-                {"username", true},
-                {"branch", true},
+                {"repositoryUrl", true, null},
+                {"username", true, null},
+                {"branch", true, VcsBranch.class},
 
-                {"password", false},
-                {"sshKey", false},
-                {"sshPassphrase", false},
+                {"password", false, null},
+                {"sshKey", false, null},
+                {"sshPassphrase", false, null},
         };
     }
 
     @Test(dataProvider = "fieldInfluenceOnCacheLocationShallow")
-    public void testFieldInfluenceOnCacheLocatonShallow(String field, boolean different) throws Exception
+    public void testFieldInfluenceOnCacheLocatonShallow(String field, boolean different, final Class<?> clazz) throws Exception
     {
-        doTestFieldInfluenceOnCacheLocaton(field, true, different);
+        doTestFieldInfluenceOnCacheLocaton(field, true, different, clazz);
     }
 
-    private void doTestFieldInfluenceOnCacheLocaton(String field, boolean shallow, boolean different) throws Exception
+    private void doTestFieldInfluenceOnCacheLocaton(String field, boolean shallow, boolean different, Class<?> clazz) throws Exception
     {
         GitRepositoryAccessData accessData = createSampleAccessData(shallow);
         GitRepositoryAccessData accessData2 = createSampleAccessData(shallow);
 
         Field f = GitRepositoryAccessData.class.getDeclaredField(field);
         f.setAccessible(true);
-        String val = (String) f.get(accessData2);
-        f.set(accessData2, val + "chg");
+        String val = f.get(accessData2).toString();
+        if (clazz!=null && VcsBranch.class.isAssignableFrom(clazz))
+        {
+            f.set(accessData2, new VcsBranchImpl(val + "chg"));
+        }
+        else
+        {
+            f.set(accessData2, val + "chg");
+        }
+
 
         File baseDir = createTempDirectory();
         File cache1 = GitCacheDirectory.getCacheDirectory(baseDir, accessData);
