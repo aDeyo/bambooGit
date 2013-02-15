@@ -415,11 +415,10 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         final ExternalProcessBuilder externalProcessBuilder = new ExternalProcessBuilder()
                 .command(commandArgs, workingDirectory)
                 .handler(handler)
+                .idleTimeout(TimeUnit.MINUTES.toMillis(commandTimeoutInMinutes))
                 .env(commandBuilder.getEnv());
 
         ExternalProcess process = externalProcessBuilder.build();
-
-        process.setTimeout(TimeUnit.MINUTES.toMillis(commandTimeoutInMinutes));
         process.execute();
 
         if (!handler.succeeded())
