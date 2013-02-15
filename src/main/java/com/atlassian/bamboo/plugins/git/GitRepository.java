@@ -208,18 +208,16 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                     {
                         public Void call() throws Exception
                         {
-                            boolean doShallowFetch = USE_SHALLOW_CLONES && substitutedAccessData.isUseShallowClones() && !cacheDirectory.isDirectory();
-
                             try
                             {
-                                helper.fetch(cacheDirectory, fetchRevision, doShallowFetch);
+                                helper.fetch(cacheDirectory, fetchRevision, false);
                             }
                             catch (Exception e)
                             {
                                 rethrowOrRemoveDirectory(e, buildLogger, cacheDirectory, "repository.git.messages.rsRecover.failedToFetchCache");
                                 buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.cleanedCacheDirectory", cacheDirectory));
 
-                                helper.fetch(cacheDirectory, fetchRevision, doShallowFetch);
+                                helper.fetch(cacheDirectory, fetchRevision, false);
                             }
 
                             return null;
@@ -296,7 +294,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
         try
         {
             final GitRepositoryAccessData.Builder substitutedAccessDataBuilder = getSubstitutedAccessDataBuilder();
-            final boolean doShallowFetch = USE_SHALLOW_CLONES && accessData.isUseShallowClones() && depth == 1;
+            final boolean doShallowFetch = USE_SHALLOW_CLONES && accessData.isUseShallowClones() && depth == 1 && !isOnLocalAgent();
             substitutedAccessDataBuilder.useShallowClones(doShallowFetch);
             final GitRepositoryAccessData substitutedAccessData = substitutedAccessDataBuilder.build();
 
@@ -316,7 +314,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                     {
                         try
                         {
-                            helper.fetch(cacheDirectory, fetchRevision, doShallowFetch && !cacheDirectory.isDirectory());
+                            helper.fetch(cacheDirectory, fetchRevision, doShallowFetch);
                             helper.checkRevisionExistsInCacheRepository(cacheDirectory, targetRevision);
                         }
                         catch (Exception e)
@@ -446,13 +444,8 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     public boolean mergeWorkspaceWith(@NotNull final BuildContext buildContext, @NotNull final File workspaceDir, @NotNull final String targetRevision) throws RepositoryException
     {
         final BuildLogger buildLogger = buildLoggerManager.getBuildLogger(PlanKeys.getPlanKey(buildContext.getPlanKey()));
-
-        final boolean doShallowFetch = false; //USE_SHALLOW_CLONES && substitutedAccessData.useShallowClones;
-        final GitRepositoryAccessData substitutedAccessData = getSubstitutedAccessDataBuilder().useShallowClones(doShallowFetch).build();
-
+        final GitRepositoryAccessData substitutedAccessData = getSubstitutedAccessDataBuilder().useShallowClones(false).build();
         final GitOperationHelper connector = GitOperationHelperFactory.createGitOperationHelper(this, substitutedAccessData, sshProxyService, buildLogger, i18nResolver);
-
-
 
         final File cacheDirectory = getCacheDirectory(substitutedAccessData);
 
@@ -467,7 +460,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                     {
                         try
                         {
-                            connector.fetch(cacheDirectory, targetRevision, doShallowFetch);
+                            connector.fetch(cacheDirectory, targetRevision, false);
                             connector.checkRevisionExistsInCacheRepository(cacheDirectory, targetRevision);
                         }
                         catch (Exception e)
@@ -486,7 +479,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
             {
                 try
                 {
-                    connector.fetch(workspaceDir, targetRevision, doShallowFetch);
+                    connector.fetch(workspaceDir, targetRevision, false);
                 }
                 catch (Exception e)
                 {
@@ -531,7 +524,6 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
         {
             public Result<RepositoryException, CommitContext> get()
             {
-                boolean doShallowFetch = USE_SHALLOW_CLONES && substitutedAccessData.isUseShallowClones() && !cacheDirectory.isDirectory();
                 try
                 {
                     try
@@ -544,7 +536,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                     {
                         // Commit might not exist locally yet, but a fetch is expensive, so let's try getting it first
                         log.debug("Fetching remote repository");
-                        helper.fetch(cacheDirectory, targetRevision, doShallowFetch);
+                        helper.fetch(cacheDirectory, targetRevision, false);
                         return Result.result(helper.getCommit(cacheDirectory, targetRevision));
                     }
                 }
