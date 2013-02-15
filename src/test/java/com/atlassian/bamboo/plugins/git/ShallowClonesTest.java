@@ -2,6 +2,7 @@ package com.atlassian.bamboo.plugins.git;
 
 import com.atlassian.bamboo.repository.RepositoryException;
 import com.atlassian.bamboo.v2.build.BuildRepositoryChanges;
+import com.atlassian.bamboo.v2.build.agent.remote.RemoteBuildDirectoryManager;
 import com.google.common.collect.Iterables;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
@@ -10,6 +11,8 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.mockito.Mockito;
+import org.mockito.internal.stubbing.answers.Returns;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -213,8 +216,11 @@ public class ShallowClonesTest extends GitAbstractTest
     {
         GitRepository gitRepository = createGitRepository();
 
+        gitRepository.setBuildDirectoryManager(Mockito.mock(RemoteBuildDirectoryManager.class, new Returns(createTempDirectory())));
+
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("repository.git.useShallowClones", shallow);
+        params.put("repository.github.useRemoteAgentCache", true);
         setRepositoryProperties(gitRepository, repositoryUrl, params);
 
         gitRepository.retrieveSourceCode(mockBuildContext(), targetRevision, getCheckoutDir(gitRepository));
@@ -295,7 +301,7 @@ public class ShallowClonesTest extends GitAbstractTest
     }
 
     @Test
-    public void testShallowCloneFromCacheContainsShallowInfo() throws Exception
+    public void testShallowCloneFromCacheDoesNotContainShallowInfo() throws Exception
     {
         GitRepository gitRepository = createGitRepository();
         setRepositoryProperties(gitRepository, "git://github.com/pstefaniak/7.git", Collections.singletonMap("repository.git.useShallowClones", true));
@@ -306,7 +312,7 @@ public class ShallowClonesTest extends GitAbstractTest
         FileRepository repository = register(new FileRepositoryBuilder().setWorkTree(getCheckoutDir(gitRepository)).build());
         Git git = new Git(repository);
         Iterable<RevCommit> commits = git.log().call();
-        assertEquals(Iterables.size(commits), 2);
+        assertEquals(Iterables.size(commits), 7);
     }
 
 }
