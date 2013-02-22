@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 public class NativeGitOperationHelper extends AbstractGitOperationHelper implements GitOperationHelper
 {
     @SuppressWarnings("UnusedDeclaration")
-    private static final Logger log = Logger.getLogger(GitRepository.class);
+    private static final Logger log = Logger.getLogger(NativeGitOperationHelper.class);
     // ------------------------------------------------------------------------------------------------------- Constants
     // ------------------------------------------------------------------------------------------------- Type Properties
     protected SshProxyService sshProxyService;
@@ -510,7 +510,10 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
         };
 
         final ImmutableMap<String, String> callResult = GET_REMOTE_REFS_CACHE.call(getRemoteRefs, accessData.getRepositoryUrl(), accessData.getUsername(), accessData.getSshKey());
-        log.info(GET_REMOTE_REFS_CACHE.stats());
+        if (log.isDebugEnabled())
+        {
+            log.debug(GET_REMOTE_REFS_CACHE.stats());
+        }
         return callResult;
     }
 
