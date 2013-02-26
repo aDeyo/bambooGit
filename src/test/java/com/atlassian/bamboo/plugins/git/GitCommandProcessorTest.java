@@ -58,6 +58,9 @@ public class GitCommandProcessorTest
     @Test
     public void properlyCachesGitExistence() throws RepositoryException, IOException
     {
+        // Sets the current tmp dir to /tmp
+        System.setProperty("java.io.tmpdir", "/tmp");
+
         final GitCommandProcessor brokenGit = new GitCommandProcessor("/" + RandomStringUtils.randomAscii(10), Mockito.mock(BuildLogger.class), null, 1, false);
         final String someDir = RandomStringUtils.randomAscii(10);
         try
@@ -78,6 +81,7 @@ public class GitCommandProcessorTest
         {
         }
 
+
         final File output = File.createTempFile("asserts", null);
         final File mockGit = File.createTempFile("git", null);
         mockGit.setExecutable(true);
@@ -90,15 +94,16 @@ public class GitCommandProcessorTest
         gitInAbsoluteLocation.checkGitExistenceInSystem(new File("/usr/bin/git"));
         assertRunCount(output, 1);
 
-        gitInAbsoluteLocation.checkGitExistenceInSystem(new File("/tmp"));
+        final String tmpDirFullPath = System.getProperty("java.io.tmpdir");
+        gitInAbsoluteLocation.checkGitExistenceInSystem(new File(tmpDirFullPath));
         assertRunCount(output, 1);
 
 
         final GitCommandProcessor gitInRelativeLocation = new GitCommandProcessor("./" + mockGit.getName(), Mockito.mock(BuildLogger.class), null, 1, false);
-        gitInRelativeLocation.checkGitExistenceInSystem(new File("/tmp"));
+        gitInRelativeLocation.checkGitExistenceInSystem(new File(tmpDirFullPath));
         assertRunCount(output, 2);
 
-        gitInRelativeLocation.checkGitExistenceInSystem(new File("/tmp"));
+        gitInRelativeLocation.checkGitExistenceInSystem(new File(tmpDirFullPath));
         assertRunCount(output, 2);
 
         gitInRelativeLocation.checkGitExistenceInSystem(new File("/tmp/../tmp"));
@@ -106,10 +111,10 @@ public class GitCommandProcessorTest
 
         final GitCommandProcessor otherGitInRelativeLocation = new GitCommandProcessor("./" + mockGit.getName(), Mockito.mock(BuildLogger.class), null, 1, false);
 
-        otherGitInRelativeLocation.checkGitExistenceInSystem(new File("/tmp"));
+        otherGitInRelativeLocation.checkGitExistenceInSystem(new File(tmpDirFullPath));
         assertRunCount(output, 3);
 
-        otherGitInRelativeLocation.checkGitExistenceInSystem(new File("/tmp"));
+        otherGitInRelativeLocation.checkGitExistenceInSystem(new File(tmpDirFullPath));
         assertRunCount(output, 3);
 
         output.delete();
