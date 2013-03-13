@@ -1,6 +1,7 @@
 package com.atlassian.bamboo.plugins.git;
 
 
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.transport.URIish;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -10,6 +11,8 @@ import java.net.URISyntaxException;
 
 public class UriUtils
 {
+    public static final String HTTP_SCHEME = "http";
+    public static final String HTTPS_SCHEME = "https";
     static final String SSH_SCHEME = "ssh";
     static final String SCHEME_DELIMITER = "://";
 
@@ -75,5 +78,35 @@ public class UriUtils
                 repositoryUri.getAbsolutePath(),
                 repositoryUri.getRawQuery(),
                 repositoryUri.getRawFragment());
+    }
+
+    public static URIish normaliseRepositoryLocation(@Nullable String userName, @Nullable String password, @NotNull URIish normalised)
+    {
+        if (StringUtils.isNotBlank(userName))
+        {
+            normalised = normalised.setUser(userName);
+        }
+        else
+        {
+            userName = normalised.getUser();
+            if (StringUtils.isEmpty(userName))
+            {
+                return normalised;
+            }
+        }
+
+        final String scheme = normalised.getScheme();
+        final boolean isHttpBased = scheme.equals(UriUtils.HTTP_SCHEME) || scheme.equals(UriUtils.HTTPS_SCHEME);
+
+        if (isHttpBased)
+        {
+            if (StringUtils.isBlank(password))
+            {
+                password = normalised.getPass();
+            }
+            return normalised.setPass(StringUtils.defaultIfBlank(password, "none")); //otherwise we'd get a password prompt
+        }
+
+        return normalised.setPass(null);
     }
 }

@@ -15,6 +15,7 @@ import com.atlassian.bamboo.utils.Pair;
 import com.atlassian.bamboo.v2.build.BuildRepositoryChanges;
 import com.atlassian.bamboo.v2.build.BuildRepositoryChangesImpl;
 import com.atlassian.sal.api.message.I18nResolver;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -25,6 +26,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.storage.file.RefDirectory;
+import org.eclipse.jgit.transport.URIish;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -123,6 +125,7 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
     // -------------------------------------------------------------------------------------------------- Public Methods
     // -------------------------------------------------------------------------------------- Basic Accessors / Mutators
 
+    @VisibleForTesting
     protected GitRepositoryAccessData adjustRepositoryAccess(@NotNull final GitRepositoryAccessData accessData) throws RepositoryException
     {
         final boolean sshKeypair = accessData.getAuthenticationType() == GitAuthenticationType.SSH_KEYPAIR;
@@ -200,13 +203,10 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
         }
         else
         {
-            if (accessData.getAuthenticationType() == GitAuthenticationType.PASSWORD)
-            {
-                GitRepositoryAccessData credentialsAwareAccessData = GitRepositoryAccessData.builder(accessData).build();
-                URI repositoryUrl = wrapWithUsernameAndPassword(credentialsAwareAccessData);
-                credentialsAwareAccessData.setRepositoryUrl(repositoryUrl.toString());
-                return credentialsAwareAccessData;
-            }
+            final GitRepositoryAccessData credentialsAwareAccessData = GitRepositoryAccessData.builder(accessData).build();
+            final String repositoryUrl = getUrlWithNormalisedCredentials(credentialsAwareAccessData);
+            credentialsAwareAccessData.setRepositoryUrl(repositoryUrl);
+            return credentialsAwareAccessData;
         }
 
         return accessData;
@@ -258,18 +258,15 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
     }
 
     @NotNull
-    private URI wrapWithUsernameAndPassword(GitRepositoryAccessData repositoryAccessData)
+    private String getUrlWithNormalisedCredentials(final GitRepositoryAccessData repositoryAccessData)
     {
         try
         {
-            URI remoteUri = new URI(repositoryAccessData.getRepositoryUrl());
-            return new URI(remoteUri.getScheme(),
-                           getAuthority(repositoryAccessData),
-                           remoteUri.getHost(),
-                           remoteUri.getPort(),
-                           remoteUri.getPath(),
-                           remoteUri.getQuery(),
-                           remoteUri.getFragment());
+            final URIish repositoryLocation = new URIish(repositoryAccessData.getRepositoryUrl());
+
+            final URIish normalisedUri = UriUtils.normaliseRepositoryLocation(repositoryAccessData.getUsername(), repositoryAccessData.getPassword(), repositoryLocation);
+
+            return normalisedUri.toPrivateString();
         }
         catch (URISyntaxException e)
         {
@@ -278,30 +275,6 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
             NativeGitOperationHelper.log.error(message, e);
             throw new RuntimeException(e);
         }
-    }
-
-    @Nullable
-    private String getAuthority(final GitRepositoryAccessData repositoryAccessData) {
-        final String username = repositoryAccessData.getUsername();
-        if (StringUtils.isEmpty(username))
-        {
-            return null;
-        }
-
-        String repositoryUrl = repositoryAccessData.getRepositoryUrl();
-        
-        final boolean passwordAuthentication = repositoryAccessData.getAuthenticationType() == GitAuthenticationType.PASSWORD;
-        final boolean isHttpBased = repositoryUrl.startsWith("http://") || repositoryUrl.startsWith("https://");
-        final boolean acceptsPasswordInUri = isHttpBased;
-
-        if (!passwordAuthentication || !acceptsPasswordInUri)
-        {
-            return username;
-        }
-
-        final String password = StringUtils.defaultIfEmpty(repositoryAccessData.getPassword(), "none"); //otherwise we'd get a password prompt
-
-        return username + ":" + password;
     }
 
     private void createLocalRepository(final File sourceDirectory, final File cacheDirectory) throws RepositoryException, IOException

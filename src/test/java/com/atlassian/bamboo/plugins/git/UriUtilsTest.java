@@ -5,6 +5,8 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import org.eclipse.jgit.transport.URIish;
+import org.hamcrest.Matcher;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -13,6 +15,8 @@ import org.junit.Test;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class UriUtilsTest
@@ -136,6 +140,43 @@ public class UriUtilsTest
         assertTrue(Iterables.all(SSH_URLS, requiresSshTransport()));
         assertTrue(Iterables.all(SCP_URLS, requiresSshTransport()));
         assertTrue(none(GIT_URLS, requiresSshTransport()));
+    }
+
+    @Test
+    public void normalisesUrlProperly() throws URISyntaxException
+    {
+        URIish repo = new URIish("http://wrong1:wrong2@host/path");
+        URIish normalised = UriUtils.normaliseRepositoryLocation("user", "password", repo);
+        assertThatUrl(normalised, equalTo("http://user:password@host/path"));
+
+        repo = new URIish("http://wrong1@host/path");
+        normalised = UriUtils.normaliseRepositoryLocation("user", null, repo);
+        assertThatUrl(normalised, equalTo("http://user:none@host/path"));
+
+        repo = new URIish("http://host/path");
+        normalised = UriUtils.normaliseRepositoryLocation("user", null, repo);
+        assertThatUrl(normalised, equalTo("http://user:none@host/path"));
+
+        repo = new URIish("ssh://wrong1:wrong2@host/path");
+        normalised = UriUtils.normaliseRepositoryLocation("user", "password", repo);
+        assertThatUrl(normalised, equalTo("ssh://user@host/path"));
+
+        repo = new URIish("ssh://okish:wrong2@host/path");
+        normalised = UriUtils.normaliseRepositoryLocation(null, "password", repo);
+        assertThatUrl(normalised, equalTo("ssh://okish@host/path"));
+
+        repo = new URIish("ssh://okish@host/path");
+        normalised = UriUtils.normaliseRepositoryLocation(null, "password", repo);
+        assertThatUrl(normalised, equalTo("ssh://okish@host/path"));
+
+        repo = new URIish("ssh://host/path");
+        normalised = UriUtils.normaliseRepositoryLocation(null, "password", repo);
+        assertThatUrl(normalised, equalTo("ssh://host/path"));
+    }
+
+    private void assertThatUrl(final URIish normalised, final Matcher<String> matcher)
+    {
+        assertThat(normalised.toPrivateString(), matcher);
     }
 
     private Predicate<? super String> requiresSshTransport()
