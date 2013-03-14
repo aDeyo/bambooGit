@@ -1,6 +1,7 @@
 package com.atlassian.bamboo.plugins.git;
 
 
+import com.atlassian.bamboo.util.HtmlUtils;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.transport.URIish;
@@ -109,7 +110,7 @@ public class UriUtils
 
         if (StringUtils.isNotBlank(userName))
         {
-            normalised = normalised.setUser(userName);
+            normalised = setUser(normalised, userName);
         }
         else
         {
@@ -122,7 +123,7 @@ public class UriUtils
                 }
                 else
                 {
-                    normalised = normalised.setUser(FAKE_USER);
+                    normalised = setUser(normalised, FAKE_USER);
                 }
             }
         }
@@ -130,20 +131,30 @@ public class UriUtils
         if (!acceptsPasswordInUri)
         {
             //no further normalisation needs to be performed
-            return normalised.setPass(null);
+            return setPassword(normalised, null);
         }
 
         // we need to have a password too
         if (StringUtils.isNotBlank(password))
         {
-            return normalised.setPass(password);
+            return setPassword(normalised, password);
         }
         else
         {
             final String urlPassword = normalised.getPass();
 
-            return StringUtils.isNotEmpty(urlPassword) ? normalised : normalised.setPass(FAKE_PASSWORD);
+            return StringUtils.isNotEmpty(urlPassword) ? normalised : setPassword(normalised, FAKE_PASSWORD);
         }
+    }
+
+    private static URIish setPassword(@NotNull final URIish normalised, @Nullable final String password)
+    {
+        return password == null ? normalised.setPass(null) : normalised.setPass(HtmlUtils.encodeUrl(password));
+    }
+
+    private static URIish setUser(@NotNull final URIish normalised, @Nullable final String userName)
+    {
+        return userName == null ? normalised.setUser(null) : normalised.setUser(HtmlUtils.encodeUrl(userName));
     }
 
     private static boolean isLocalUri(@Nullable final String scheme)

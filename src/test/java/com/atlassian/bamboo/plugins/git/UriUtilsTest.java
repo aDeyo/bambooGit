@@ -200,6 +200,18 @@ public class UriUtilsTest
     }
 
     @Test
+    public void properlyUrlEncodesUsernameAndPassword() throws URISyntaxException
+    {
+        URIish repo = new URIish("ssh://host/path");
+        URIish normalised = UriUtils.normaliseRepositoryLocation("@", "@", repo);
+        assertThatUrl(normalised, equalTo("ssh://%40@host/path"));
+
+        repo = new URIish("http://host/path");
+        normalised = UriUtils.normaliseRepositoryLocation("@", "@", repo);
+        assertThatUrl(normalised, equalTo("http://%40:%40@host/path"));
+    }
+
+    @Test
     public void handlesLocalUrls() throws URISyntaxException
     {
         final String localRepo1 = "/okish@host/path";
@@ -228,4 +240,5 @@ public class UriUtilsTest
                 return UriUtils.requiresSshTransport(ScpAwareUri.create(url));
             }
         };
-    }}
+    }
+}
