@@ -151,19 +151,11 @@ public class UriUtilsTest
 
         repo = new URIish("http://wrong1@host/path");
         normalised = UriUtils.normaliseRepositoryLocation("user", null, repo);
-        assertThatUrl(normalised, equalTo("http://user:none@host/path"));
+        assertThatUrl(normalised, equalTo("http://user:" + UriUtils.FAKE_PASSWORD + "@host/path"));
 
         repo = new URIish("http://host/path");
         normalised = UriUtils.normaliseRepositoryLocation("user", null, repo);
-        assertThatUrl(normalised, equalTo("http://user:none@host/path"));
-
-        repo = new URIish("ssh://wrong1:wrong2@host/path");
-        normalised = UriUtils.normaliseRepositoryLocation("user", "password", repo);
-        assertThatUrl(normalised, equalTo("ssh://user@host/path"));
-
-        repo = new URIish("ssh://okish:wrong2@host/path");
-        normalised = UriUtils.normaliseRepositoryLocation(null, "password", repo);
-        assertThatUrl(normalised, equalTo("ssh://okish@host/path"));
+        assertThatUrl(normalised, equalTo("http://user:" + UriUtils.FAKE_PASSWORD + "@host/path"));
 
         repo = new URIish("ssh://okish@host/path");
         normalised = UriUtils.normaliseRepositoryLocation(null, "password", repo);
@@ -172,6 +164,39 @@ public class UriUtilsTest
         repo = new URIish("ssh://host/path");
         normalised = UriUtils.normaliseRepositoryLocation(null, "password", repo);
         assertThatUrl(normalised, equalTo("ssh://host/path"));
+    }
+
+    @Test
+    public void properlyHandlesSshWithPasssword() throws URISyntaxException
+    {
+        final String password = "this_password_would_be_ignored_by_ssh_transport";
+        URIish repo = new URIish("ssh://wrong1:" + password + "@host/path");
+        URIish normalised = UriUtils.normaliseRepositoryLocation("user", "password", repo);
+        assertThatUrl(normalised, equalTo("ssh://user@host/path"));
+
+        repo = new URIish("ssh://okish:"  + password + "@host/path");
+        normalised = UriUtils.normaliseRepositoryLocation(null, "password", repo);
+        assertThatUrl(normalised, equalTo("ssh://okish@host/path"));
+    }
+
+    @Test
+    public void properlyNormalisesUserName() throws URISyntaxException
+    {
+        URIish repo = new URIish("ssh://okish@host/path");
+        URIish normalised = UriUtils.normaliseRepositoryLocation(null, "password", repo);
+        assertThatUrl(normalised, equalTo("ssh://okish@host/path"));
+
+        repo = new URIish("ssh://okish@host/path");
+        normalised = UriUtils.normaliseRepositoryLocation(null, null, repo);
+        assertThatUrl(normalised, equalTo("ssh://okish@host/path"));
+
+        repo = new URIish("http://okish@host/path");
+        normalised = UriUtils.normaliseRepositoryLocation(null, null, repo);
+        assertThatUrl(normalised, equalTo("http://okish:" + UriUtils.FAKE_PASSWORD + "@host/path"));
+
+        repo = new URIish("http://host/path");
+        normalised = UriUtils.normaliseRepositoryLocation(null, null, repo);
+        assertThatUrl(normalised, equalTo("http://" + UriUtils.FAKE_USER + ":" + UriUtils.FAKE_PASSWORD + "@host/path"));
     }
 
     private void assertThatUrl(final URIish normalised, final Matcher<String> matcher)

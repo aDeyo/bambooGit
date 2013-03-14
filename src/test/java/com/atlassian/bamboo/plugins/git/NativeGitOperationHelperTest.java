@@ -15,9 +15,8 @@ import static org.mockito.Mockito.when;
 public class NativeGitOperationHelperTest
 {
     @Test
-    public void properlyStripsUsernameForNoAuth() throws RepositoryException
+    public void normalisesProperlyEvenForNoAuth() throws RepositoryException
     {
-
         final GitRepositoryAccessData accessData = createAccessData(
                 GitAuthenticationType.NONE,
                 "https://pbruski@stash-dev.atlassian.com/scm/BAM/bamboo-stash-plugin.git");
@@ -26,7 +25,7 @@ public class NativeGitOperationHelperTest
 
         final GitRepositoryAccessData gitRepositoryAccessData = nativeGitOperationHelper.adjustRepositoryAccess(accessData);
 
-        assertThat(gitRepositoryAccessData.getRepositoryUrl(), equalTo("https://stash-dev.atlassian.com/scm/BAM/bamboo-stash-plugin.git"));
+        assertThat(gitRepositoryAccessData.getRepositoryUrl(), equalTo("https://pbruski:" + UriUtils.FAKE_PASSWORD + "@stash-dev.atlassian.com/scm/BAM/bamboo-stash-plugin.git"));
     }
 
     @Test
@@ -39,7 +38,7 @@ public class NativeGitOperationHelperTest
         final NativeGitOperationHelper nativeGitOperationHelper = newNativeGitOperationHelper(accessData);
 
         final GitRepositoryAccessData gitRepositoryAccessData = nativeGitOperationHelper.adjustRepositoryAccess(accessData);
-        assertThat(gitRepositoryAccessData.getRepositoryUrl(), equalTo("https://pbruski:none@stash-dev.atlassian.com/scm/BAM/bamboo-stash-plugin.git"));
+        assertThat(gitRepositoryAccessData.getRepositoryUrl(), equalTo("https://pbruski:" + UriUtils.FAKE_PASSWORD+ "@stash-dev.atlassian.com/scm/BAM/bamboo-stash-plugin.git"));
     }
 
     private GitRepositoryAccessData createAccessData(final GitAuthenticationType gitAuthenticationType, final String repositoryUrl)

@@ -1,6 +1,7 @@
 package com.atlassian.bamboo.plugins.git;
 
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.transport.URIish;
 import org.jetbrains.annotations.NotNull;
@@ -13,10 +14,18 @@ public class UriUtils
 {
     public static final String HTTP_SCHEME = "http";
     public static final String HTTPS_SCHEME = "https";
+    public static final String FTP_SCHEME = "ftp";
+    public static final String FTPS_SCHEME = "ftps";
     static final String SSH_SCHEME = "ssh";
     static final String SCHEME_DELIMITER = "://";
 
     public static final String SSH_PREFIX = UriUtils.SSH_SCHEME + UriUtils.SCHEME_DELIMITER;
+
+    @VisibleForTesting
+    static final String FAKE_USER = "nouser";
+
+    @VisibleForTesting
+    static final String FAKE_PASSWORD = "nopassword";
 
     private UriUtils()
     {
@@ -80,33 +89,53 @@ public class UriUtils
                 repositoryUri.getRawFragment());
     }
 
-    public static URIish normaliseRepositoryLocation(@Nullable String userName, @Nullable String password, @NotNull URIish normalised)
+    /**
+     * This method adds/removes username and password from URL to avoid interactive password prompts from the git command line client
+     */
+    public static URIish normaliseRepositoryLocation(@Nullable final String userName, @Nullable final String password, @NotNull URIish normalised)
     {
+        final String scheme = normalised.getScheme();
+        final boolean isHttpBased = scheme.equals(UriUtils.HTTP_SCHEME) || scheme.equals(UriUtils.HTTPS_SCHEME);
+        final boolean isFtpBased = scheme.equals(UriUtils.FTP_SCHEME) || scheme.equals(UriUtils.FTPS_SCHEME);
+
+        final boolean acceptsPasswordInUri = isHttpBased || isFtpBased;
+
         if (StringUtils.isNotBlank(userName))
         {
             normalised = normalised.setUser(userName);
         }
         else
         {
-            userName = normalised.getUser();
-            if (StringUtils.isEmpty(userName))
+            final String urlUserName = normalised.getUser();
+            if (StringUtils.isEmpty(urlUserName))
             {
-                return normalised;
+                if (!isHttpBased)
+                {
+                    return normalised;
+                }
+                else
+                {
+                    normalised = normalised.setUser(FAKE_USER);
+                }
             }
         }
 
-        final String scheme = normalised.getScheme();
-        final boolean isHttpBased = scheme.equals(UriUtils.HTTP_SCHEME) || scheme.equals(UriUtils.HTTPS_SCHEME);
-
-        if (isHttpBased)
+        if (!acceptsPasswordInUri)
         {
-            if (StringUtils.isBlank(password))
-            {
-                password = normalised.getPass();
-            }
-            return normalised.setPass(StringUtils.defaultIfBlank(password, "none")); //otherwise we'd get a password prompt
+            //no further normalisation needs to be performed
+            return normalised.setPass(null);
         }
 
-        return normalised.setPass(null);
+        // we need to have a password too
+        if (StringUtils.isNotBlank(password))
+        {
+            return normalised.setPass(password);
+        }
+        else
+        {
+            final String urlPassword = normalised.getPass();
+
+            return StringUtils.isNotEmpty(urlPassword) ? normalised : normalised.setPass(FAKE_PASSWORD);
+        }
     }
 }
