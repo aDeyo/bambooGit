@@ -199,6 +199,20 @@ public class UriUtilsTest
         assertThatUrl(normalised, equalTo("http://" + UriUtils.FAKE_USER + ":" + UriUtils.FAKE_PASSWORD + "@host/path"));
     }
 
+    @Test
+    public void handlesLocalUrls() throws URISyntaxException
+    {
+        final String localRepo1 = "/okish@host/path";
+        URIish repo = new URIish(localRepo1);
+        URIish normalised = UriUtils.normaliseRepositoryLocation("user", "password", repo);
+        assertThatUrl(normalised, equalTo(localRepo1));
+
+        final String localRepo2 = "file://okish@host/path";
+        repo = new URIish(localRepo2);
+        normalised = UriUtils.normaliseRepositoryLocation("user", "password", repo);
+        assertThatUrl(normalised, equalTo(localRepo2));
+    }
+
     private void assertThatUrl(final URIish normalised, final Matcher<String> matcher)
     {
         assertThat(normalised.toPrivateString(), matcher);

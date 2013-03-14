@@ -16,6 +16,7 @@ public class UriUtils
     public static final String HTTPS_SCHEME = "https";
     public static final String FTP_SCHEME = "ftp";
     public static final String FTPS_SCHEME = "ftps";
+    public static final String FILE_SCHEME = "file";
     static final String SSH_SCHEME = "ssh";
     static final String SCHEME_DELIMITER = "://";
 
@@ -95,6 +96,12 @@ public class UriUtils
     public static URIish normaliseRepositoryLocation(@Nullable final String userName, @Nullable final String password, @NotNull URIish normalised)
     {
         final String scheme = normalised.getScheme();
+
+        if (isLocalUri(scheme))
+        {
+            return normalised;
+        }
+
         final boolean isHttpBased = scheme.equals(UriUtils.HTTP_SCHEME) || scheme.equals(UriUtils.HTTPS_SCHEME);
         final boolean isFtpBased = scheme.equals(UriUtils.FTP_SCHEME) || scheme.equals(UriUtils.FTPS_SCHEME);
 
@@ -109,7 +116,7 @@ public class UriUtils
             final String urlUserName = normalised.getUser();
             if (StringUtils.isEmpty(urlUserName))
             {
-                if (!isHttpBased)
+                if (!acceptsPasswordInUri)
                 {
                     return normalised;
                 }
@@ -137,5 +144,10 @@ public class UriUtils
 
             return StringUtils.isNotEmpty(urlPassword) ? normalised : normalised.setPass(FAKE_PASSWORD);
         }
+    }
+
+    private static boolean isLocalUri(@Nullable final String scheme)
+    {
+        return scheme==null || scheme.equals(FILE_SCHEME);
     }
 }

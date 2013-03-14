@@ -15,6 +15,21 @@ import static org.mockito.Mockito.when;
 public class NativeGitOperationHelperTest
 {
     @Test
+    public void survivesUrlsWithoutScheme() throws RepositoryException
+    {
+        final String localRepositoryUrl = "/pbruski@stash-dev.atlassian.com/scm/BAM/bamboo-stash-plugin.git";
+        final GitRepositoryAccessData accessData = createAccessData(
+                GitAuthenticationType.NONE,
+                localRepositoryUrl);
+
+        final NativeGitOperationHelper nativeGitOperationHelper = newNativeGitOperationHelper(accessData);
+
+        final GitRepositoryAccessData gitRepositoryAccessData = nativeGitOperationHelper.adjustRepositoryAccess(accessData);
+
+        assertThat(gitRepositoryAccessData.getRepositoryUrl(), equalTo(localRepositoryUrl));
+    }
+
+    @Test
     public void normalisesProperlyEvenForNoAuth() throws RepositoryException
     {
         final GitRepositoryAccessData accessData = createAccessData(
