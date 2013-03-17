@@ -9,6 +9,7 @@ import com.atlassian.bamboo.core.TransportProtocol;
 import com.atlassian.bamboo.plan.PlanKey;
 import com.atlassian.bamboo.plan.PlanKeys;
 import com.atlassian.bamboo.plan.branch.BranchIntegrationHelper;
+import com.atlassian.bamboo.plan.branch.VcsBranchImpl;
 import com.atlassian.bamboo.project.Project;
 import com.atlassian.bamboo.repository.RepositoryException;
 import com.atlassian.bamboo.security.EncryptionService;
@@ -245,7 +246,7 @@ public class GitAbstractTest
     {
         GitRepositoryAccessData.Builder builder = GitRepositoryAccessData.builder()
                 .repositoryUrl(repositoryUrl)
-                .branch( branch)
+                .branch(new VcsBranchImpl(branch))
                 .username(username)
                 .password(password)
                 .sshKey(sshKey)

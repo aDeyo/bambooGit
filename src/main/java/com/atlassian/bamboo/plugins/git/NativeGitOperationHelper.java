@@ -77,7 +77,7 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
     @Override
     public void pushRevision(@NotNull final File sourceDirectory, @NotNull String revision) throws RepositoryException
     {
-        String possibleBranch = gitCommandProcessor.getPossibleBranchNameForCheckout(sourceDirectory, revision, accessData.getBranch());
+        String possibleBranch = gitCommandProcessor.getPossibleBranchNameForCheckout(sourceDirectory, revision, accessData.getVcsBranch().getName());
         if (StringUtils.isBlank(possibleBranch))
         {
             throw new RepositoryException("Can't guess branch name for revision " + revision + " when trying to perform push.");
@@ -351,7 +351,7 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
             File lck = new File(sourceDirectory, "index.lock");
             FileUtils.deleteQuietly(lck);
 
-            gitCommandProcessor.runCheckoutCommand(sourceDirectory, targetRevision, accessData.getBranch());
+            gitCommandProcessor.runCheckoutCommand(sourceDirectory, targetRevision, accessData.getVcsBranch().getName());
             if (accessData.isUseSubmodules())
             {
                 gitCommandProcessor.runSubmoduleUpdateCommand(sourceDirectory);
@@ -515,10 +515,11 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
     public String obtainLatestRevision() throws RepositoryException
     {
         final File workingDir = new File(".");
-        final Pair<String, String> branchRef = resolveBranch(accessData, null, workingDir, accessData.getBranch());
+        final Pair<String, String> branchRef = resolveBranch(accessData, null, workingDir, accessData.getVcsBranch().getName());
         if (branchRef==null)
         {
-            throw new InvalidRepositoryException(i18nResolver.getText("repository.git.messages.cannotDetermineHead", PasswordMaskingUtils.mask(accessData.getRepositoryUrl(), accessData.getPassword()), accessData.getBranch()));
+            throw new InvalidRepositoryException(i18nResolver.getText("repository.git.messages.cannotDetermineHead",
+                                                                      PasswordMaskingUtils.mask(accessData.getRepositoryUrl(), accessData.getPassword()), accessData.getVcsBranch().getName()));
         }
 
         return branchRef.second;

@@ -302,7 +302,7 @@ public class GitCacheHandler
     private Set<File> findUnusedCaches(@NotNull Set<File> usedCaches)
     {
         final File[] cacheDirs = getCacheRootDir().listFiles((FileFilter) DirectoryFileFilter.DIRECTORY); // will be null if cacheRootDir does not exist
-        return ArrayUtils.isEmpty(cacheDirs) ? Collections.<File>emptySet() : Sets.difference(ImmutableSet.of(cacheDirs), usedCaches);
+        return ArrayUtils.isEmpty(cacheDirs) ? Collections.<File>emptySet() : Sets.difference(ImmutableSet.copyOf(cacheDirs), usedCaches);
     }
 
     public void setCachedPlanManager(CachedPlanManager cachedPlanManager)

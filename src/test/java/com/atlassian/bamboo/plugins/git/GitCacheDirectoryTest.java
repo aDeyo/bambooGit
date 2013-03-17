@@ -100,8 +100,8 @@ public class GitCacheDirectoryTest extends GitAbstractTest
         GitRepositoryAccessData accessDataNonShallow = createSampleAccessData(false);
         GitRepositoryAccessData accessDataShallow = createSampleAccessData(true);
 
-        accessDataNonShallow = GitRepositoryAccessData.builder(accessDataNonShallow).branch("").build();
-        accessDataShallow = GitRepositoryAccessData.builder(accessDataShallow).branch("").build();
+        accessDataNonShallow = GitRepositoryAccessData.builder(accessDataNonShallow).branch(new VcsBranchImpl("")).build();
+        accessDataShallow = GitRepositoryAccessData.builder(accessDataShallow).branch(new VcsBranchImpl("")).build();
 
         File baseDir = createTempDirectory();
         File cache1 = GitCacheDirectory.getCacheDirectory(baseDir, accessDataNonShallow);

@@ -155,7 +155,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
             GitRepository gitRepo = (GitRepository) repository;
             return !new EqualsBuilder()
                     .append(accessData.getRepositoryUrl(), gitRepo.accessData.getRepositoryUrl())
-                    .append(accessData.getBranch(), gitRepo.accessData.getBranch())
+                    .append(accessData.getVcsBranch(), gitRepo.accessData.getVcsBranch())
                     .append(accessData.getUsername(), gitRepo.accessData.getUsername())
                     .append(accessData.getSshKey(), gitRepo.accessData.getSshKey())
                     .isEquals();
@@ -190,7 +190,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
             final GitOperationHelper helper = GitOperationHelperFactory.createGitOperationHelper(this, substitutedAccessData, sshProxyService, buildLogger, i18nResolver);
 
             final String latestRevision = helper.obtainLatestRevision();
-            final String fetchRevision = customRevision != null ? customRevision : substitutedAccessData.getBranch();
+            final String fetchRevision = customRevision != null ? customRevision : substitutedAccessData.getVcsBranch().getName();
             final String targetRevision = customRevision != null ? customRevision : latestRevision;
 
             if (latestRevision.equals(lastVcsRevisionKey) && customRevision == null)
@@ -298,11 +298,11 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
             substitutedAccessDataBuilder.useShallowClones(doShallowFetch);
             final GitRepositoryAccessData substitutedAccessData = substitutedAccessDataBuilder.build();
 
-            final BuildLogger buildLogger = buildLoggerManager.getBuildLogger(buildContext.getPlanResultKey());
+            final BuildLogger buildLogger = buildLoggerManager.getLogger(buildContext.getPlanResultKey());
             final GitOperationHelper helper = GitOperationHelperFactory.createGitOperationHelper(this, substitutedAccessData, sshProxyService, buildLogger, i18nResolver);
 
             final String targetRevision = vcsRevisionKey != null ? vcsRevisionKey : helper.obtainLatestRevision();
-            final String fetchRevision = substitutedAccessData.getBranch();
+            final String fetchRevision = substitutedAccessData.getVcsBranch().getName();
             final String previousRevision = helper.getRevisionIfExists(sourceDirectory, Constants.HEAD);
 
             if (isOnLocalAgent() || substitutedAccessData.isUseRemoteAgentCache())
@@ -715,7 +715,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     {
         Map<String, String> variables = Maps.newHashMap();
         variables.put(REPOSITORY_GIT_REPOSITORY_URL, accessData.getRepositoryUrl());
-        variables.put(REPOSITORY_GIT_BRANCH, accessData.getBranch());
+        variables.put(REPOSITORY_GIT_BRANCH, accessData.getVcsBranch().getName());
         variables.put(REPOSITORY_GIT_USERNAME, accessData.getUsername());
         return variables;
     }
@@ -773,7 +773,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     {
         return GitRepositoryAccessData.builder(accessData)
                 .repositoryUrl(substituteString(accessData.getRepositoryUrl()))
-                .branch(substituteString(accessData.getBranch()))
+                .branch(new VcsBranchImpl(substituteString(accessData.getVcsBranch().getName())))
                 .username(substituteString(accessData.getUsername()))
                 .password(encryptionService.decrypt(accessData.getPassword()))
                 .sshKey(encryptionService.decrypt(accessData.getSshKey()))

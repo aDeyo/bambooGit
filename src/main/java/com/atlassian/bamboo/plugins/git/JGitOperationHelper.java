@@ -146,7 +146,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
                     @Override
                     public String doWithTransport(@NotNull Transport transport) throws Exception
                     {
-                        return getRefSpecForName(transport, accessData.getBranch());
+                        return getRefSpecForName(transport, accessData.getVcsBranch().getName());
                     }
                 });
             } catch (Exception e)
@@ -222,7 +222,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
                     @Override
                     public Void doWithFetchConnection(@NotNull Transport transport, @NotNull FetchConnection connection) throws IOException
                     {
-                        final String resolvedBranch = resolveRefSpec(accessData.getBranch(), connection).getName();
+                        final String resolvedBranch = resolveRefSpec(accessData.getVcsBranch().getName(), connection).getName();
 
                         RefSpec refSpec = new RefSpec()
                                 .setForceUpdate(true)
@@ -406,10 +406,11 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
                 @Override
                 public String doWithFetchConnection(@NotNull Transport transport, @NotNull FetchConnection connection) throws RepositoryException
                 {
-                    Ref headRef = resolveRefSpec(accessData.getBranch(), connection);
+                    Ref headRef = resolveRefSpec(accessData.getVcsBranch().getName(), connection);
                     if (headRef == null)
                     {
-                        throw new InvalidRepositoryException(i18nResolver.getText("repository.git.messages.cannotDetermineHead", accessData.getRepositoryUrl(), accessData.getBranch()));
+                        throw new InvalidRepositoryException(i18nResolver.getText("repository.git.messages.cannotDetermineHead",
+                                                                                  accessData.getRepositoryUrl(), accessData.getVcsBranch().getName()));
                     }
                     else
                     {
@@ -702,7 +703,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
         return buildChanges;
     }
 
-    private AuthorImpl getAuthor(RevCommit commit)
+        private AuthorImpl getAuthor(RevCommit commit)
     {
         PersonIdent gitPerson = commit.getAuthorIdent();
         if (gitPerson == null)

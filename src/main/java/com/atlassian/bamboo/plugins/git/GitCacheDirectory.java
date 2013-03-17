@@ -49,7 +49,7 @@ public class GitCacheDirectory
     static String calculateRepositorySha(@NotNull final GitRepositoryAccessData repositoryData)
     {
         return repositoryData.isUseShallowClones() ?
-                calculateAggregateSha(repositoryData.getRepositoryUrl(), repositoryData.getUsername(), repositoryData.getBranch()) :
+                calculateAggregateSha(repositoryData.getRepositoryUrl(), repositoryData.getUsername(), repositoryData.getVcsBranch().getName()) :
                 calculateAggregateSha(repositoryData.getRepositoryUrl(), repositoryData.getUsername());
     }
     
