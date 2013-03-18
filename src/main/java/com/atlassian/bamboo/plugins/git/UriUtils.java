@@ -94,7 +94,7 @@ public class UriUtils
     /**
      * This method adds/removes username and password from URL to avoid interactive password prompts from the git command line client
      */
-    public static URIish normaliseRepositoryLocation(@Nullable final String userName, @Nullable final String password, @NotNull URIish normalised)
+    public static URIish normaliseRepositoryLocation(@Nullable final String userName, @Nullable final String password, @NotNull URIish normalised, final boolean shouldAddFakeAuthData)
     {
         final String scheme = normalised.getScheme();
 
@@ -121,7 +121,7 @@ public class UriUtils
                 {
                     return normalised;
                 }
-                else
+                else if (shouldAddFakeAuthData)
                 {
                     normalised = setUser(normalised, FAKE_USER);
                 }
@@ -143,7 +143,8 @@ public class UriUtils
         {
             final String urlPassword = normalised.getPass();
 
-            return StringUtils.isNotEmpty(urlPassword) ? normalised : setPassword(normalised, FAKE_PASSWORD);
+            boolean hasPasswordInUrl = StringUtils.isNotEmpty(urlPassword);
+            return hasPasswordInUrl || !shouldAddFakeAuthData ? normalised : setPassword(normalised, FAKE_PASSWORD);
         }
     }
 

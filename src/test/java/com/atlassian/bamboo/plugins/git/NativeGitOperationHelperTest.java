@@ -29,33 +29,6 @@ public class NativeGitOperationHelperTest
         assertThat(gitRepositoryAccessData.getRepositoryUrl(), equalTo(localRepositoryUrl));
     }
 
-    @Test
-    public void normalisesProperlyEvenForNoAuth() throws RepositoryException
-    {
-        final GitRepositoryAccessData accessData = createAccessData(
-                GitAuthenticationType.NONE,
-                "https://pbruski@stash-dev.atlassian.com/scm/BAM/bamboo-stash-plugin.git");
-
-        final NativeGitOperationHelper nativeGitOperationHelper = newNativeGitOperationHelper(accessData);
-
-        final GitRepositoryAccessData gitRepositoryAccessData = nativeGitOperationHelper.adjustRepositoryAccess(accessData);
-
-        assertThat(gitRepositoryAccessData.getRepositoryUrl(), equalTo("https://pbruski:" + UriUtils.FAKE_PASSWORD + "@stash-dev.atlassian.com/scm/BAM/bamboo-stash-plugin.git"));
-    }
-
-    @Test
-    public void addsFakePaswordWhenMissing() throws RepositoryException
-    {
-        final GitRepositoryAccessData accessData = createAccessData(
-                GitAuthenticationType.PASSWORD,
-                "https://pbruski@stash-dev.atlassian.com/scm/BAM/bamboo-stash-plugin.git");
-
-        final NativeGitOperationHelper nativeGitOperationHelper = newNativeGitOperationHelper(accessData);
-
-        final GitRepositoryAccessData gitRepositoryAccessData = nativeGitOperationHelper.adjustRepositoryAccess(accessData);
-        assertThat(gitRepositoryAccessData.getRepositoryUrl(), equalTo("https://pbruski:" + UriUtils.FAKE_PASSWORD+ "@stash-dev.atlassian.com/scm/BAM/bamboo-stash-plugin.git"));
-    }
-
     private GitRepositoryAccessData createAccessData(final GitAuthenticationType gitAuthenticationType, final String repositoryUrl)
     {
         return GitRepositoryAccessData.builder()

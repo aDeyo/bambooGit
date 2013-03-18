@@ -264,7 +264,7 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
         {
             final URIish repositoryLocation = new URIish(repositoryAccessData.getRepositoryUrl());
 
-            final URIish normalisedUri = UriUtils.normaliseRepositoryLocation(repositoryAccessData.getUsername(), repositoryAccessData.getPassword(), repositoryLocation);
+            final URIish normalisedUri = UriUtils.normaliseRepositoryLocation(repositoryAccessData.getUsername(), repositoryAccessData.getPassword(), repositoryLocation, false);
 
             return normalisedUri.toPrivateString();
         }

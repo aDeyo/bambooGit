@@ -1,11 +1,16 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.util.concurrent.Lazy;
+import com.atlassian.util.concurrent.Supplier;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.SystemUtils;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -14,9 +19,34 @@ import java.util.Map;
 public class GitCommandBuilder
 {
     private static final Logger log = Logger.getLogger(GitCommandBuilder.class);
+    private static final String SSH_ASKPASS_VARIABLE = "SSH_ASKPASS"; //it works for http(s)/ftp(s) too
 
     private final List<String> commands = new ArrayList<String>();
     private final Map<String, String> env = Maps.newHashMap();
+    private static final Supplier<String> COMMAND_WITH_EMPTY_OUTPUT = Lazy.supplier(new Supplier<String>()
+    {
+        @Nullable
+        @Override
+        public String get()
+        {
+            if (SystemUtils.IS_OS_WINDOWS)
+            {
+                return "echo";
+            }
+
+            for (String file : Lists.newArrayList("/bin/echo", "/usr/bin/echo"))
+            {
+                if (new File(file).canExecute())
+                {
+                    return file;
+                }
+            }
+
+            log.info("Unable to find a no-output command for SSH_ASKPASS");
+
+            return null;
+        }
+    });
     private String executable;
     private String branch;
     private String revision;
@@ -169,6 +199,11 @@ public class GitCommandBuilder
         {
             log.debug("GIT_SSH="+sshCommand);
             env.put("GIT_SSH", sshCommand);
+        }
+
+        if (System.getenv(SSH_ASKPASS_VARIABLE)==null && !env.containsKey(SSH_ASKPASS_VARIABLE))
+        {
+            env.put(SSH_ASKPASS_VARIABLE, COMMAND_WITH_EMPTY_OUTPUT.get());
         }
 
         return env;
