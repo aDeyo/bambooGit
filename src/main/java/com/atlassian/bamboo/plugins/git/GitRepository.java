@@ -20,6 +20,7 @@ import com.atlassian.bamboo.repository.CacheHandler;
 import com.atlassian.bamboo.repository.CacheId;
 import com.atlassian.bamboo.repository.CachingAwareRepository;
 import com.atlassian.bamboo.repository.CustomVariableProviderRepository;
+import com.atlassian.bamboo.repository.DeploymentAwareRepository;
 import com.atlassian.bamboo.repository.MavenPomAccessor;
 import com.atlassian.bamboo.repository.MavenPomAccessorCapableRepository;
 import com.atlassian.bamboo.repository.NameValuePair;
@@ -83,7 +84,8 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                                                                            PushCapableRepository,
                                                                            CachingAwareRepository,
                                                                            BranchMergingAwareRepository, 
-                                                                           CacheHandler
+                                                                           CacheHandler,
+                                                                           DeploymentAwareRepository
 {
     // ------------------------------------------------------------------------------------------------------- Constants
 
@@ -185,7 +187,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     {
         try
         {
-            final BuildLogger buildLogger = buildLoggerManager.getBuildLogger(PlanKeys.getPlanKey(planKey));
+            final BuildLogger buildLogger = buildLoggerManager.getLogger(PlanKeys.getPlanKey(planKey));
             final GitRepositoryAccessData substitutedAccessData = getSubstitutedAccessData();
             final GitOperationHelper helper = GitOperationHelperFactory.createGitOperationHelper(this, substitutedAccessData, sshProxyService, buildLogger, i18nResolver);
 
@@ -443,7 +445,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     @Override
     public boolean mergeWorkspaceWith(@NotNull final BuildContext buildContext, @NotNull final File workspaceDir, @NotNull final String targetRevision) throws RepositoryException
     {
-        final BuildLogger buildLogger = buildLoggerManager.getBuildLogger(PlanKeys.getPlanKey(buildContext.getPlanKey()));
+        final BuildLogger buildLogger = buildLoggerManager.getLogger(buildContext.getEntityKey());
         final GitRepositoryAccessData substitutedAccessData = getSubstitutedAccessDataBuilder().useShallowClones(false).build();
         final GitOperationHelper connector = GitOperationHelperFactory.createGitOperationHelper(this, substitutedAccessData, sshProxyService, buildLogger, i18nResolver);
 
