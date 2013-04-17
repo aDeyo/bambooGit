@@ -314,7 +314,7 @@ public class GitCacheHandlerTest extends GitAbstractTest
     private List<RemoteBambooMessage> feedWithRemoteAgents(final GitCacheHandler handler)
     {
         final AgentManager agentManager = Mockito.mock(AgentManager.class);
-        final BuildAgentImpl buildAgent = new BuildAgentImpl(null, null, Lists.<AgentAssignment>newArrayList());
+        final BuildAgentImpl buildAgent = new BuildAgentImpl(null, null, Collections.<AgentAssignment>emptyList());
         buildAgent.setDefinition(new RemoteAgentDefinitionImpl());
         Mockito.when(agentManager.getAllAgents()).thenReturn(Collections.<BuildAgent>singletonList(buildAgent));
         handler.setAgentManager(agentManager);
