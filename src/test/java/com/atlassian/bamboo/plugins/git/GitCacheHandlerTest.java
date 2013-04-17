@@ -1,6 +1,7 @@
 package com.atlassian.bamboo.plugins.git;
 
 import com.atlassian.bamboo.build.fileserver.BuildDirectoryManager;
+import com.atlassian.bamboo.buildqueue.AgentAssignment;
 import com.atlassian.bamboo.buildqueue.manager.AgentManager;
 import com.atlassian.bamboo.chains.Chain;
 import com.atlassian.bamboo.plan.PlanHelper;
@@ -42,6 +43,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 import org.testng.Assert;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -50,7 +52,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nullable;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -313,7 +314,7 @@ public class GitCacheHandlerTest extends GitAbstractTest
     private List<RemoteBambooMessage> feedWithRemoteAgents(final GitCacheHandler handler)
     {
         final AgentManager agentManager = Mockito.mock(AgentManager.class);
-        final BuildAgentImpl buildAgent = new BuildAgentImpl(null, null);
+        final BuildAgentImpl buildAgent = new BuildAgentImpl(null, null, Collections.<AgentAssignment>emptyList());
         buildAgent.setDefinition(new RemoteAgentDefinitionImpl());
         Mockito.when(agentManager.getAllAgents()).thenReturn(Collections.<BuildAgent>singletonList(buildAgent));
         handler.setAgentManager(agentManager);
