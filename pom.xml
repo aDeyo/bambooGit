@@ -10,7 +10,6 @@
 
   <name>Atlassian Bamboo Git Repository Plugin</name>
   <description>Plugin to provide Git SCM support.</description>
-
   <organization>
     <name>Atlassian</name>
     <url>http://www.atlassian.com/</url>
@@ -20,6 +19,17 @@
     <connection>scm:git:git://bitbucket.org/atlassian/bamboo-git-plugin.git</connection>
     <developerConnection>scm:git:ssh://git@bitbucket.org/atlassian/bamboo-git-plugin.git</developerConnection>
   </scm>
+
+  <properties>
+    <bamboo.version>5.0-SNAPSHOT</bamboo.version>
+    <bamboo.data.version>3.2.2</bamboo.data.version>
+
+    <!-- after upgrading atlassian.rest.version do not forget to update jackson.version and jersey.version with values from com.atlassian.plugins.rest:atlassian-rest-parent -->
+    <atlassian.rest.version>2.6.3.1</atlassian.rest.version>
+    <atlassian.rest.jackson.version>1.9.1</atlassian.rest.jackson.version>
+    <atlassian.rest.jersey.version>1.8-atlassian-6</atlassian.rest.jersey.version>
+  </properties>
+
 
   <dependencies>
     <dependency>
@@ -217,16 +227,6 @@
       </plugin>
     </plugins>
   </build>
-
-  <properties>
-    <bamboo.version>5.0-M3</bamboo.version>
-    <bamboo.data.version>3.2.2</bamboo.data.version>
-
-    <!-- after upgrading atlassian.rest.version do not forget to update jackson.version and jersey.version with values from com.atlassian.plugins.rest:atlassian-rest-parent -->
-    <atlassian.rest.version>2.6.3.1</atlassian.rest.version>
-    <atlassian.rest.jackson.version>1.9.1</atlassian.rest.jackson.version>
-    <atlassian.rest.jersey.version>1.8-atlassian-6</atlassian.rest.jersey.version>
-  </properties>
 
   <distributionManagement>
     <repository>
