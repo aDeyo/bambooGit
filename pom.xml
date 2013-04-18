@@ -142,6 +142,38 @@
     </dependency>
   </dependencies>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>bouncycastle</groupId>
+        <artifactId>bcprov-jdk14</artifactId>
+        <version>140</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>bouncycastle</groupId>
+        <artifactId>bcprov-jdk15</artifactId>
+        <version>140</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcprov-jdk15</artifactId>
+        <version>1.44</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcprov-jdk16</artifactId>
+        <version>1.46</version>
+        <scope>provided</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <build>
     <plugins>
       <plugin>
@@ -224,6 +256,40 @@
         <configuration>
           <jdkLevel>1.6</jdkLevel>
         </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>1.2</version>
+        <executions>
+          <execution>
+            <id>enforce-java</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>1.6.0</version>
+                </requireJavaVersion>
+                <bannedDependencies>
+                  <excludes>
+                    <exclude>org.bouncycastle:*</exclude>
+                    <exclude>bouncycastle:*</exclude>
+                  </excludes>
+                  <includes>
+                    <include>org.bouncycastle:bcprov-jdk15on</include>
+                    <include>org.bouncycastle:bcpkix-jdk15on</include>
+                    <include>org.bouncycastle:*:*:*:provided</include>
+                    <include>bouncycastle:*:*:*:provided</include>
+                  </includes>
+                </bannedDependencies>
+              </rules>
+              <fail>true</fail>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

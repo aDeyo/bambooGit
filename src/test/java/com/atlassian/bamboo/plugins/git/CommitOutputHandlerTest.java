@@ -3,7 +3,6 @@ package com.atlassian.bamboo.plugins.git;
 import com.atlassian.bamboo.commit.CommitContext;
 import com.beust.jcommander.internal.Sets;
 import com.google.common.collect.Iterables;
-import com.ibm.icu.impl.Assert;
 import org.apache.log4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,7 +47,7 @@ public class CommitOutputHandlerTest
         }
         catch (Exception e)
         {
-            Assert.fail(e);
+            throw new AssertionError(e);
         }
     }
 
