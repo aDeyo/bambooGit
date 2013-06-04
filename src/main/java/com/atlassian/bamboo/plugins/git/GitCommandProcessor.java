@@ -175,7 +175,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
                     final Matcher matcher = GIT_VERSION_PATTERN.matcher(output);
                     if (!matcher.find())
                     {
-                        throw new GitCommandException("Unable to parse git commnand output: " + exitCode, null, output, "");
+                        throw new GitCommandException("Unable to parse git commnand output: " + exitCode, null, output, "", null);
                     }
                     return matcher.group();
                 }
@@ -431,7 +431,8 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
             throw new GitCommandException(
                     message, proxyException != null ? proxyException : handler.getException(),
                     maskedOutput,
-                    proxyErrorMessage != null ? PasswordMaskingUtils.mask(proxyErrorMessage, passwordToObfuscate) : maskedOutput);
+                    proxyErrorMessage != null ? PasswordMaskingUtils.mask(proxyErrorMessage, passwordToObfuscate) : maskedOutput,
+                    passwordToObfuscate);
         }
 
         return handler.getExitCode();
