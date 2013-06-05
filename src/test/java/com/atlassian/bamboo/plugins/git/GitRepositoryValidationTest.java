@@ -3,6 +3,7 @@ package com.atlassian.bamboo.plugins.git;
 import com.atlassian.bamboo.FeatureManager;
 import com.atlassian.bamboo.core.TransportProtocol;
 import com.atlassian.bamboo.utils.error.ErrorCollection;
+import com.atlassian.bamboo.variable.CustomVariableContext;
 import com.atlassian.bamboo.ww2.actions.build.admin.create.BuildConfiguration;
 import com.atlassian.sal.api.message.I18nResolver;
 import org.mockito.Matchers;
@@ -225,6 +226,7 @@ public class GitRepositoryValidationTest
     private static GitRepository createRepository()
     {
         GitRepository repo = new GitRepository();
+        repo.setCustomVariableContext(Mockito.mock(CustomVariableContext.class));
         repo.setI18nResolver(Mockito.mock(I18nResolver.class, new ReturnsMocks()));
         FeatureManager featureManager = mock(FeatureManager.class);
         when(featureManager.isTransportSupported(Matchers.<TransportProtocol>any())).thenReturn(true);
