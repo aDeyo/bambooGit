@@ -31,6 +31,7 @@ import com.atlassian.bamboo.repository.SelectableAuthenticationRepository;
 import com.atlassian.bamboo.security.EncryptionService;
 import com.atlassian.bamboo.ssh.SshProxyService;
 import com.atlassian.bamboo.util.TextProviderUtils;
+import com.atlassian.bamboo.utils.BambooFieldValidate;
 import com.atlassian.bamboo.utils.SystemProperty;
 import com.atlassian.bamboo.utils.error.ErrorCollection;
 import com.atlassian.bamboo.utils.fage.Result;
@@ -648,6 +649,19 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
 
         final String repositoryUrl = StringUtils.trim(buildConfiguration.getString(REPOSITORY_GIT_REPOSITORY_URL));
         final GitAuthenticationType authenticationType = safeParseAuthenticationType(buildConfiguration.getString(REPOSITORY_GIT_AUTHENTICATION_TYPE));
+
+        if (BambooFieldValidate.findFieldShellEscapeViolation(errorCollection, i18nResolver, REPOSITORY_GIT_REPOSITORY_URL, substituteString(buildConfiguration.getString(REPOSITORY_GIT_REPOSITORY_URL))))
+        {
+            return errorCollection;
+        }
+        if (BambooFieldValidate.findFieldShellEscapeViolation(errorCollection, i18nResolver, REPOSITORY_GIT_BRANCH, substituteString(buildConfiguration.getString(REPOSITORY_GIT_BRANCH))))
+        {
+            return errorCollection;
+        }
+        if (BambooFieldValidate.findFieldShellEscapeViolation(errorCollection, i18nResolver, REPOSITORY_GIT_USERNAME, substituteString(buildConfiguration.getString(REPOSITORY_GIT_USERNAME))))
+        {
+            return errorCollection;
+        }
 
         if (StringUtils.isBlank(repositoryUrl))
         {
