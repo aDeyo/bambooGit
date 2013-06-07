@@ -18,12 +18,13 @@ import static com.atlassian.bamboo.plugins.git.CommitOutputHandler.END_OF_COMMIT
 import static com.atlassian.bamboo.plugins.git.CommitOutputHandler.FILE_LIST;
 import static com.atlassian.bamboo.plugins.git.CommitOutputHandler.HASH;
 import static com.atlassian.bamboo.plugins.git.CommitOutputHandler.TIMESTAMP;
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 
 public class CommitOutputHandlerTest
 {
+    @SuppressWarnings("unused")
     private static final Logger log = Logger.getLogger(CommitOutputHandlerTest.class);
     // ------------------------------------------------------------------------------------------------------- Constants
     // ------------------------------------------------------------------------------------------------- Type Properties
