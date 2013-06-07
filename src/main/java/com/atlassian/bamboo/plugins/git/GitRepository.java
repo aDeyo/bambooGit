@@ -650,15 +650,15 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
         final String repositoryUrl = StringUtils.trim(buildConfiguration.getString(REPOSITORY_GIT_REPOSITORY_URL));
         final GitAuthenticationType authenticationType = safeParseAuthenticationType(buildConfiguration.getString(REPOSITORY_GIT_AUTHENTICATION_TYPE));
 
-        if (BambooFieldValidate.findFieldShellEscapeViolation(errorCollection, i18nResolver, REPOSITORY_GIT_REPOSITORY_URL, substituteString(buildConfiguration.getString(REPOSITORY_GIT_REPOSITORY_URL))))
+        if (BambooFieldValidate.findFieldShellInjectionViolation(errorCollection, i18nResolver, REPOSITORY_GIT_REPOSITORY_URL, substituteString(buildConfiguration.getString(REPOSITORY_GIT_REPOSITORY_URL))))
         {
             return errorCollection;
         }
-        if (BambooFieldValidate.findFieldShellEscapeViolation(errorCollection, i18nResolver, REPOSITORY_GIT_BRANCH, substituteString(buildConfiguration.getString(REPOSITORY_GIT_BRANCH))))
+        if (BambooFieldValidate.findFieldShellInjectionViolation(errorCollection, i18nResolver, REPOSITORY_GIT_BRANCH, substituteString(buildConfiguration.getString(REPOSITORY_GIT_BRANCH))))
         {
             return errorCollection;
         }
-        if (BambooFieldValidate.findFieldShellEscapeViolation(errorCollection, i18nResolver, REPOSITORY_GIT_USERNAME, substituteString(buildConfiguration.getString(REPOSITORY_GIT_USERNAME))))
+        if (BambooFieldValidate.findFieldShellInjectionViolation(errorCollection, i18nResolver, REPOSITORY_GIT_USERNAME, substituteString(buildConfiguration.getString(REPOSITORY_GIT_USERNAME))))
         {
             return errorCollection;
         }
