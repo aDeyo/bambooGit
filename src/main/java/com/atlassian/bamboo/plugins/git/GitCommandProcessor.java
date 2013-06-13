@@ -45,7 +45,7 @@ import java.util.regex.Pattern;
 
 class GitCommandProcessor implements Serializable, ProxyErrorReceiver
 {
-    private static final Logger log = Logger.getLogger(GitRepository.class);
+    private static final Logger log = Logger.getLogger(GitCommandProcessor.class);
 
     // ------------------------------------------------------------------------------------------------------- Constants
     public static final String GIT_OUTPUT_ENCODING = "UTF-8";
