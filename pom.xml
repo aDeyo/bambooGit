@@ -72,8 +72,6 @@
           <artifactId>jsch</artifactId>
         </exclusion>
       </exclusions>
-      <scope>system</scope>
-      <systemPath>${basedir}/libs/org.eclipse.jgit-1.1.0.201109151100-r-ATLASSIAN-4.jar</systemPath>
     </dependency>
     <dependency>
       <groupId>log4j</groupId>
