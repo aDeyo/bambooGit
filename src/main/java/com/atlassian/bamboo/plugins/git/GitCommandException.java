@@ -1,6 +1,7 @@
 package com.atlassian.bamboo.plugins.git;
 
 import com.atlassian.bamboo.repository.RepositoryException;
+import com.atlassian.bamboo.util.PasswordMaskingUtils;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -11,18 +12,21 @@ class GitCommandException extends RepositoryException {
 
     private final String stdout;
     private final String stderr;
+    private final String passwordToObfuscate;
 
     /**
      * Create a command exception containing the message and root cause and the stderr
      *
      * @param message The error message
      * @param cause   The root cause
-     * @param stderr Command standard error output
+     * @param stderr  Command standard error output
+     * @param passwordToObfuscate an user password that might be visible in the exception message - it will be replaced with asterisk when rendering exception in UI
      */
-    public GitCommandException(String message, @Nullable Throwable cause, String stdout, String stderr) {
+    public GitCommandException(String message, @Nullable Throwable cause, String stdout, String stderr, @Nullable String passwordToObfuscate) {
         super(message, cause);
         this.stdout = stdout;
         this.stderr = stderr;
+        this.passwordToObfuscate = passwordToObfuscate;
     }
 
     @Override
@@ -51,6 +55,6 @@ class GitCommandException extends RepositoryException {
                     .append(stdout);
         }
 
-        return sb.toString();
+        return PasswordMaskingUtils.mask(sb.toString(), passwordToObfuscate);
     }
 }
