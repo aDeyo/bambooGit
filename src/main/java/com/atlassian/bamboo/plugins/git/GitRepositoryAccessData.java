@@ -1,11 +1,14 @@
 package com.atlassian.bamboo.plugins.git;
 
+import java.io.Serializable;
+
+import org.jetbrains.annotations.NotNull;
+
+import com.atlassian.bamboo.credentials.CredentialsManager;
+import com.atlassian.bamboo.credentials.SshCredentials;
 import com.atlassian.bamboo.plan.branch.VcsBranch;
 import com.atlassian.bamboo.plan.branch.VcsBranchImpl;
 import com.atlassian.bamboo.ssh.ProxyRegistrationInfo;
-import org.jetbrains.annotations.NotNull;
-
-import java.io.Serializable;
 
 public final class GitRepositoryAccessData implements Serializable
 {
@@ -21,8 +24,13 @@ public final class GitRepositoryAccessData implements Serializable
     private boolean useSubmodules;
     private int commandTimeout;
     private boolean verboseLogs;
+    private boolean useSharedCredentials;
+    private Long sharedCredentialsId;
+    private boolean decryptedCredentials;
 
     private transient ProxyRegistrationInfo proxyRegistrationInfo;
+    private transient CredentialsManager credentialsManager;
+    
 
     public static final class Builder
     {
@@ -38,6 +46,9 @@ public final class GitRepositoryAccessData implements Serializable
         private boolean useSubmodules;
         private int commandTimeout;
         private boolean verboseLogs;
+        private Long sharedCredentialsId;
+        private boolean decryptedCredentials;
+        private CredentialsManager credentialsManager;
 
         public Builder clone(GitRepositoryAccessData gitRepositoryAccessData)
         {
@@ -53,6 +64,9 @@ public final class GitRepositoryAccessData implements Serializable
             this.useRemoteAgentCache = gitRepositoryAccessData.useRemoteAgentCache;
             this.commandTimeout = gitRepositoryAccessData.commandTimeout;
             this.verboseLogs = gitRepositoryAccessData.verboseLogs;
+            this.sharedCredentialsId = gitRepositoryAccessData.sharedCredentialsId;
+            this.credentialsManager = gitRepositoryAccessData.credentialsManager;
+            this.decryptedCredentials = gitRepositoryAccessData.decryptedCredentials;
             return this;
         }
 
@@ -134,6 +148,23 @@ public final class GitRepositoryAccessData implements Serializable
             this.verboseLogs = verboseLogs;
             return this;
         }
+        public Builder sharedCredentialsId(Long sharedCredentialsId)
+        {
+            this.sharedCredentialsId = sharedCredentialsId;
+            return this;
+        }
+
+        public Builder credentialsManager(CredentialsManager credentialsManager)
+        {
+            this.credentialsManager = credentialsManager;
+            return this;
+        }
+        
+        public Builder decryptedCredentials(boolean decryptedCredentials)
+        {
+            this.decryptedCredentials = decryptedCredentials;
+            return this;
+        }
 
         public GitRepositoryAccessData build()
         {
@@ -150,8 +181,13 @@ public final class GitRepositoryAccessData implements Serializable
             data.useSubmodules = this.useSubmodules;
             data.commandTimeout = this.commandTimeout;
             data.verboseLogs = this.verboseLogs;
+            data.sharedCredentialsId = this.sharedCredentialsId;
+            data.credentialsManager = this.credentialsManager;
+            data.decryptedCredentials = this.decryptedCredentials;
+            data.useSharedCredentials = GitAuthenticationType.SHARED_CREDENTIALS.equals(this.authenticationType);
             return data;
         }
+      
     }
 
    public static Builder builder()
@@ -202,16 +238,37 @@ public final class GitRepositoryAccessData implements Serializable
 
     public String getSshKey()
     {
+        if(!decryptedCredentials && useSharedCredentials && sharedCredentialsId != null)
+        {
+            SshCredentials sshCredentials = credentialsManager.getSshCredentials(this.sharedCredentialsId);
+            if(sshCredentials != null)
+            {
+                return sshCredentials.getSshKey();
+            }
+        }
         return sshKey;
     }
 
     public String getSshPassphrase()
     {
+        if(!decryptedCredentials && useSharedCredentials  && sharedCredentialsId != null)
+        {
+            SshCredentials sshCredentials = credentialsManager.getSshCredentials(this.sharedCredentialsId);
+            if(sshCredentials != null)
+            {
+                return sshCredentials.getSshPassphrase();
+            }
+        }
+        
         return sshPassphrase;
     }
 
     public GitAuthenticationType getAuthenticationType()
     {
+        if(useSharedCredentials)
+        {
+            return GitAuthenticationType.SSH_KEYPAIR;
+        }
         return authenticationType;
     }
 
@@ -254,4 +311,15 @@ public final class GitRepositoryAccessData implements Serializable
     {
         this.proxyRegistrationInfo = proxyRegistrationInfo;
     }
+
+    public Long getSharedCredentialsId()
+    {
+        return sharedCredentialsId;
+    }
+
+    public void setSharedCredentialsId(Long sharedCredentialsId)
+    {
+        this.sharedCredentialsId = sharedCredentialsId;
+    }
+    
 }

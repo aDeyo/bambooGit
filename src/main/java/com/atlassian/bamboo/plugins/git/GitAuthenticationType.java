@@ -4,5 +4,6 @@ public enum GitAuthenticationType
 {
     NONE,
     PASSWORD,
-    SSH_KEYPAIR
+    SSH_KEYPAIR,
+    SHARED_CREDENTIALS
 }

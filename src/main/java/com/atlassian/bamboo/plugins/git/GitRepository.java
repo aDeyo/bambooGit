@@ -6,6 +6,8 @@ import com.atlassian.bamboo.build.logger.NullBuildLogger;
 import com.atlassian.bamboo.commit.CommitContext;
 import com.atlassian.bamboo.commit.CommitContextImpl;
 import com.atlassian.bamboo.core.TransportProtocol;
+import com.atlassian.bamboo.credentials.CredentialsManager;
+import com.atlassian.bamboo.credentials.SshCredentials;
 import com.atlassian.bamboo.plan.PlanKey;
 import com.atlassian.bamboo.plan.PlanKeys;
 import com.atlassian.bamboo.plan.branch.BranchIntegrationHelper;
@@ -47,6 +49,9 @@ import com.atlassian.bamboo.ww2.actions.build.admin.create.BuildConfiguration;
 import com.atlassian.sal.api.message.I18nResolver;
 import com.atlassian.util.concurrent.Supplier;
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -104,6 +109,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     private static final String REPOSITORY_GIT_MAVEN_PATH = "repository.git.maven.path";
     private static final String REPOSITORY_GIT_COMMAND_TIMEOUT = "repository.git.commandTimeout";
     private static final String REPOSITORY_GIT_VERBOSE_LOGS = "repository.git.verbose.logs";
+    private static final String REPOSITORY_GIT_SHAREDCREDENTIALS = "repository.git.sharedCrendentials";
     private static final String TEMPORARY_GIT_PASSWORD = "temporary.git.password";
     private static final String TEMPORARY_GIT_PASSWORD_CHANGE = "temporary.git.password.change";
     private static final String TEMPORARY_GIT_SSH_PASSPHRASE = "temporary.git.ssh.passphrase";
@@ -133,6 +139,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     private transient GitCacheHandler gitCacheHandler;
     private transient SshProxyService sshProxyService;
     private transient EncryptionService encryptionService;
+    private transient CredentialsManager credentialsManager;
     // ---------------------------------------------------------------------------------------------------- Constructors
 
     // ----------------------------------------------------------------------------------------------- Interface Methods
@@ -616,6 +623,8 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                 .useSubmodules(config.getBoolean(REPOSITORY_GIT_USE_SUBMODULES, false))
                 .commandTimeout(config.getInt(REPOSITORY_GIT_COMMAND_TIMEOUT, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES))
                 .verboseLogs(config.getBoolean(REPOSITORY_GIT_VERBOSE_LOGS, false))
+                .sharedCredentialsId(config.getLong(REPOSITORY_GIT_SHAREDCREDENTIALS, null))
+                .credentialsManager(credentialsManager)
                 .build();
 
         pathToPom = config.getString(REPOSITORY_GIT_MAVEN_PATH);
@@ -638,6 +647,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
         configuration.setProperty(REPOSITORY_GIT_USE_SUBMODULES, accessData.isUseSubmodules());
         configuration.setProperty(REPOSITORY_GIT_COMMAND_TIMEOUT, accessData.getCommandTimeout());
         configuration.setProperty(REPOSITORY_GIT_VERBOSE_LOGS, accessData.isVerboseLogs());
+        configuration.setProperty(REPOSITORY_GIT_SHAREDCREDENTIALS, accessData.getSharedCredentialsId());
         return configuration;
     }
 
@@ -745,12 +755,41 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     @NotNull
     public List<NameValuePair> getAuthenticationTypes()
     {
-        return Lists.transform(Arrays.asList(GitAuthenticationType.values()), new Function<GitAuthenticationType, NameValuePair>()
+        List<NameValuePair> authTypes = Lists.transform(Arrays.asList(GitAuthenticationType.values()), new Function<GitAuthenticationType, NameValuePair>()
         {
             public NameValuePair apply(GitAuthenticationType from)
             {
                 final String typeName = from.name();
                 return new NameValuePair(typeName, getAuthTypeName(typeName));
+            }
+        });
+        
+        // don't show shared credential option, if there are not shared credentails stored
+        if(getSharedCredentials().isEmpty())
+        {
+            return Lists.newArrayList(Collections2.filter(authTypes, new Predicate<NameValuePair>()
+            {
+                @Override
+                public boolean apply(NameValuePair pair)
+                {
+                    return !pair.getName().equals(GitAuthenticationType.SHARED_CREDENTIALS.name());
+                }
+            }));
+            
+        }
+        return authTypes;
+        
+    }
+    
+    
+    @NotNull
+    public List<NameValuePair> getSharedCredentials()
+    {
+        return Lists.transform(credentialsManager.findSshCredentials(), new Function<SshCredentials, NameValuePair>()
+        {
+            public NameValuePair apply(SshCredentials credentials)
+            {
+                return new NameValuePair(Long.toString(credentials.getId()), credentials.getName());
             }
         });
     }
@@ -793,7 +832,8 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                 .username(substituteString(accessData.getUsername()))
                 .password(encryptionService.decrypt(accessData.getPassword()))
                 .sshKey(encryptionService.decrypt(accessData.getSshKey()))
-                .sshPassphrase(encryptionService.decrypt(accessData.getSshPassphrase()));
+                .sshPassphrase(encryptionService.decrypt(accessData.getSshPassphrase()))
+                .decryptedCredentials(true);             
     }
 
     GitRepositoryAccessData getSubstitutedAccessData()
@@ -888,7 +928,12 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     {
         this.encryptionService = encryptionService;
     }
-
+    
+    public void setCredentialsManager(CredentialsManager credentialsManager)
+    {
+        this.credentialsManager = credentialsManager;
+    }
+    
     public String getOptionDescription()
     {
         String capabilitiesLink = ServletActionContext.getRequest().getContextPath() +
