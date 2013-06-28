@@ -785,6 +785,11 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     @NotNull
     public List<NameValuePair> getSharedCredentials()
     {
+        if(credentialsManager == null)
+        {
+            return Lists.newArrayList();
+        }
+        
         return Lists.transform(credentialsManager.findSshCredentials(), new Function<SshCredentials, NameValuePair>()
         {
             public NameValuePair apply(SshCredentials credentials)
