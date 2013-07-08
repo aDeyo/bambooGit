@@ -274,6 +274,16 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         runCommand(commandBuilder, workingDirectory, new LoggingOutputHandler(buildLogger));
     }
 
+    public void runLocalCloneCommand(@NotNull final File workingDirectory, final File cacheDirectory) throws RepositoryException
+    {
+        GitCommandBuilder commandBuilder = createCommandBuilder("clone", "file://" + cacheDirectory.getAbsolutePath());
+        commandBuilder.append("-n"); //no checkout
+        commandBuilder.append("--reference");
+        commandBuilder.append(cacheDirectory.getAbsolutePath()); //instruct git to create .git/objects/info/alternates
+        commandBuilder.destination(workingDirectory.getAbsolutePath());
+        runCommand(commandBuilder, workingDirectory, new LoggingOutputHandler(buildLogger));
+    }
+
     public void runCheckoutCommand(@NotNull final File workingDirectory, String revision, String configuredBranchName) throws RepositoryException
     {
         /**

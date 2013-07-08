@@ -284,51 +284,18 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
             sourceDirectory.mkdirs();
         }
         File gitDirectory = new File(sourceDirectory, Constants.DOT_GIT);
-        String headRef = null;
-        File cacheGitDir = null;
-        File alternateObjectDir = null;
-        if (cacheDirectory != null && cacheDirectory.exists())
-        {
-            cacheGitDir = new File(cacheDirectory, Constants.DOT_GIT);
-            File objectsCache = new File(cacheGitDir, "objects");
-            if (objectsCache.exists())
-            {
-                alternateObjectDir = objectsCache;
-                headRef = FileUtils.readFileToString(new File(cacheGitDir, Constants.HEAD));
-            }
-        }
 
         if (!gitDirectory.exists())
         {
             buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.creatingGitRepository", gitDirectory));
-            gitCommandProcessor.runInitCommand(sourceDirectory);
-        }
-
-        // lets update alternatives here for a moment
-        if (alternateObjectDir !=null)
-        {
-            List<String> alternatePaths = new ArrayList<String>(1);
-            alternatePaths.add(alternateObjectDir.getAbsolutePath());
-            final File alternates = new File(new File(new File(gitDirectory, "objects"), "info"), "alternates");
-            FileUtils.writeLines(alternates, alternatePaths, "\n");
-        }
-
-        if (cacheGitDir != null && cacheGitDir.isDirectory())
-        {
-            // copy tags and branches heads from the cache repository
-            FileUtils.copyDirectoryToDirectory(new File(cacheGitDir, Constants.R_TAGS), new File(gitDirectory, Constants.R_REFS));
-            FileUtils.copyDirectoryToDirectory(new File(cacheGitDir, Constants.R_HEADS), new File(gitDirectory, Constants.R_REFS));
-
-            File shallow = new File(cacheGitDir, "shallow");
-            if (shallow.exists())
+            if (cacheDirectory != null)
             {
-                FileUtils.copyFileToDirectory(shallow, gitDirectory);
+                gitCommandProcessor.runLocalCloneCommand(sourceDirectory, cacheDirectory);
             }
-        }
-
-        if (StringUtils.startsWith(headRef, RefDirectory.SYMREF))
-        {
-            FileUtils.writeStringToFile(new File(gitDirectory, Constants.HEAD), headRef);
+            else
+            {
+                gitCommandProcessor.runInitCommand(sourceDirectory);
+            }
         }
     }
 
