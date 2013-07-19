@@ -45,7 +45,7 @@ import java.util.regex.Pattern;
 
 class GitCommandProcessor implements Serializable, ProxyErrorReceiver
 {
-    private static final Logger log = Logger.getLogger(GitRepository.class);
+    private static final Logger log = Logger.getLogger(GitCommandProcessor.class);
 
     // ------------------------------------------------------------------------------------------------------- Constants
     public static final String GIT_OUTPUT_ENCODING = "UTF-8";
@@ -175,7 +175,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
                     final Matcher matcher = GIT_VERSION_PATTERN.matcher(output);
                     if (!matcher.find())
                     {
-                        throw new GitCommandException("Unable to parse git commnand output: " + exitCode, null, output, "");
+                        throw new GitCommandException("Unable to parse git commnand output: " + exitCode, null, output, "", null);
                     }
                     return matcher.group();
                 }
@@ -271,6 +271,16 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
             commandBuilder.verbose(true);
             commandBuilder.append("--progress");
         }
+        runCommand(commandBuilder, workingDirectory, new LoggingOutputHandler(buildLogger));
+    }
+
+    public void runLocalCloneCommand(@NotNull final File workingDirectory, final File cacheDirectory) throws RepositoryException
+    {
+        GitCommandBuilder commandBuilder = createCommandBuilder("clone", "file://" + cacheDirectory.getAbsolutePath());
+        commandBuilder.append("-n"); //no checkout
+        commandBuilder.append("--reference");
+        commandBuilder.append(cacheDirectory.getAbsolutePath()); //instruct git to create .git/objects/info/alternates
+        commandBuilder.destination(workingDirectory.getAbsolutePath());
         runCommand(commandBuilder, workingDirectory, new LoggingOutputHandler(buildLogger));
     }
 
@@ -431,7 +441,8 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
             throw new GitCommandException(
                     message, proxyException != null ? proxyException : handler.getException(),
                     maskedOutput,
-                    proxyErrorMessage != null ? PasswordMaskingUtils.mask(proxyErrorMessage, passwordToObfuscate) : maskedOutput);
+                    proxyErrorMessage != null ? PasswordMaskingUtils.mask(proxyErrorMessage, passwordToObfuscate) : maskedOutput,
+                    passwordToObfuscate);
         }
 
         return handler.getExitCode();

@@ -57,7 +57,8 @@ public class GitCapabilityTypeModule extends AbstractMultipleExecutableCapabilit
         return Arrays.asList(
                 "C:\\Program Files\\git",
                 "C:\\Program Files (x86)\\git",
-                "C:\\git"
+                "C:\\git",
+                "C:\\cygwin\\bin\\git"
         );
     }
 
