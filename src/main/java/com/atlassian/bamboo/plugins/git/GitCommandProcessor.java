@@ -61,6 +61,8 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
             "#!/bin/sh\n" +
                     "exec ssh " + SSH_OPTIONS + " $@\n";
 
+    private static final String REMOTE_ORIGIN = Constants.R_REMOTES + Constants.DEFAULT_REMOTE_NAME + '/';
+
     // ------------------------------------------------------------------------------------------------- Type Properties
 
     private final String gitExecutable;
@@ -324,6 +326,19 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
     }
 
     // -------------------------------------------------------------------------------------------------- Helper Methods
+    private String extractBranchName(String possibleBranch)
+    {
+        if (possibleBranch.startsWith(Constants.R_HEADS))
+        {
+            return StringUtils.removeStart(possibleBranch, Constants.R_HEADS);
+        }
+        else if (possibleBranch.startsWith(REMOTE_ORIGIN))
+        {
+            return StringUtils.removeStart(possibleBranch, REMOTE_ORIGIN);
+        }
+
+        return null;
+    }
 
     public String getPossibleBranchNameForCheckout(File workingDirectory, String revision, String configuredBranchName) throws RepositoryException
     {
@@ -333,6 +348,8 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         runCommand(commandBuilder, workingDirectory, outputHandler);
 
         String revisionDescription = outputHandler.getOutput();
+        log.debug("Full output: " + revisionDescription);
+
         if (StringUtils.isNotBlank(revisionDescription))
         {
             Set<String> possibleBranches = Sets.newHashSet(
@@ -340,9 +357,9 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
                             CharMatcher.anyOf("()").removeFrom(StringUtils.trim(revisionDescription))));
             for (String possibleBranch : possibleBranches)
             {
-                if (possibleBranch.startsWith(Constants.R_HEADS))
+                String possibleBranchName = extractBranchName(possibleBranch);
+                if (possibleBranchName != null)
                 {
-                    String possibleBranchName = StringUtils.removeStart(possibleBranch, Constants.R_HEADS);
                     if (possibleBranchName.equals(configuredBranchName) || (StringUtils.isBlank(configuredBranchName) && possibleBranchName.equals(Constants.MASTER)))
                     {
                         return possibleBranchName;
