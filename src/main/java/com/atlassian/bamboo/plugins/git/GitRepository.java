@@ -91,11 +91,14 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     // ------------------------------------------------------------------------------------------------------- Constants
 
     private static final String REPOSITORY_GIT_NAME = "repository.git.name";
-    private static final String REPOSITORY_GIT_REPOSITORY_URL = "repository.git.repositoryUrl";
+    private static final String REPOSITORY_URL = "repositoryUrl";
+    private static final String REPOSITORY_GIT_REPOSITORY_URL = "repository.git." + REPOSITORY_URL;
     private static final String REPOSITORY_GIT_AUTHENTICATION_TYPE = "repository.git.authenticationType";
-    private static final String REPOSITORY_GIT_USERNAME = "repository.git.username";
+    private static final String REPOSITORY_USERNAME = "username";
+    private static final String REPOSITORY_GIT_USERNAME = "repository.git." + REPOSITORY_USERNAME;
     private static final String REPOSITORY_GIT_PASSWORD = "repository.git.password";
-    private static final String REPOSITORY_GIT_BRANCH = "repository.git.branch";
+    private static final String REPOSITORY_BRANCH = "branch";
+    private static final String REPOSITORY_GIT_BRANCH = "repository.git." + REPOSITORY_BRANCH;
     private static final String REPOSITORY_GIT_SSH_KEY = "repository.git.ssh.key";
     private static final String REPOSITORY_GIT_SSH_PASSPHRASE = "repository.git.ssh.passphrase";
     private static final String REPOSITORY_GIT_USE_SHALLOW_CLONES = "repository.git.useShallowClones";
@@ -727,12 +730,24 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     }
 
     @NotNull
+    @Override
     public Map<String, String> getCustomVariables()
     {
         Map<String, String> variables = Maps.newHashMap();
         variables.put(REPOSITORY_GIT_REPOSITORY_URL, accessData.getRepositoryUrl());
         variables.put(REPOSITORY_GIT_BRANCH, accessData.getVcsBranch().getName());
         variables.put(REPOSITORY_GIT_USERNAME, accessData.getUsername());
+        return variables;
+    }
+
+    @NotNull
+    @Override
+    public Map<String, String> getPlanRepositoryVariables()
+    {
+        Map<String, String> variables = Maps.newHashMap();
+        variables.put(REPOSITORY_URL, accessData.getRepositoryUrl());
+        variables.put(REPOSITORY_BRANCH, accessData.getVcsBranch().getName());
+        variables.put(REPOSITORY_USERNAME, accessData.getUsername());
         return variables;
     }
 
