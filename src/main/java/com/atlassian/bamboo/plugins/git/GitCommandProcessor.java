@@ -45,7 +45,7 @@ import java.util.regex.Pattern;
 
 class GitCommandProcessor implements Serializable, ProxyErrorReceiver
 {
-    private static final Logger log = Logger.getLogger(GitRepository.class);
+    private static final Logger log = Logger.getLogger(GitCommandProcessor.class);
 
     // ------------------------------------------------------------------------------------------------------- Constants
     public static final String GIT_OUTPUT_ENCODING = "UTF-8";
@@ -60,6 +60,8 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
     private static final String SSH_UNIX =
             "#!/bin/sh\n" +
                     "exec ssh " + SSH_OPTIONS + " $@\n";
+
+    private static final String REMOTE_ORIGIN = Constants.R_REMOTES + Constants.DEFAULT_REMOTE_NAME + '/';
 
     // ------------------------------------------------------------------------------------------------- Type Properties
 
@@ -274,6 +276,16 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         runCommand(commandBuilder, workingDirectory, new LoggingOutputHandler(buildLogger));
     }
 
+    public void runLocalCloneCommand(@NotNull final File workingDirectory, final File cacheDirectory) throws RepositoryException
+    {
+        GitCommandBuilder commandBuilder = createCommandBuilder("clone", "file://" + cacheDirectory.getAbsolutePath());
+        commandBuilder.append("-n"); //no checkout
+        commandBuilder.append("--reference");
+        commandBuilder.append(cacheDirectory.getAbsolutePath()); //instruct git to create .git/objects/info/alternates
+        commandBuilder.destination(workingDirectory.getAbsolutePath());
+        runCommand(commandBuilder, workingDirectory, new LoggingOutputHandler(buildLogger));
+    }
+
     public void runCheckoutCommand(@NotNull final File workingDirectory, String revision, String configuredBranchName) throws RepositoryException
     {
         /**
@@ -314,6 +326,19 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
     }
 
     // -------------------------------------------------------------------------------------------------- Helper Methods
+    private String extractBranchName(String possibleBranch)
+    {
+        if (possibleBranch.startsWith(Constants.R_HEADS))
+        {
+            return StringUtils.removeStart(possibleBranch, Constants.R_HEADS);
+        }
+        else if (possibleBranch.startsWith(REMOTE_ORIGIN))
+        {
+            return StringUtils.removeStart(possibleBranch, REMOTE_ORIGIN);
+        }
+
+        return null;
+    }
 
     public String getPossibleBranchNameForCheckout(File workingDirectory, String revision, String configuredBranchName) throws RepositoryException
     {
@@ -323,6 +348,8 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         runCommand(commandBuilder, workingDirectory, outputHandler);
 
         String revisionDescription = outputHandler.getOutput();
+        log.debug("Full output: " + revisionDescription);
+
         if (StringUtils.isNotBlank(revisionDescription))
         {
             Set<String> possibleBranches = Sets.newHashSet(
@@ -330,9 +357,9 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
                             CharMatcher.anyOf("()").removeFrom(StringUtils.trim(revisionDescription))));
             for (String possibleBranch : possibleBranches)
             {
-                if (possibleBranch.startsWith(Constants.R_HEADS))
+                String possibleBranchName = extractBranchName(possibleBranch);
+                if (possibleBranchName != null)
                 {
-                    String possibleBranchName = StringUtils.removeStart(possibleBranch, Constants.R_HEADS);
                     if (possibleBranchName.equals(configuredBranchName) || (StringUtils.isBlank(configuredBranchName) && possibleBranchName.equals(Constants.MASTER)))
                     {
                         return possibleBranchName;

@@ -17,7 +17,7 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 
-import static com.atlassian.bamboo.spring.SpringTestHelper.mockSpringComponent;
+import static com.atlassian.bamboo.testutils.spring.SpringTestHelper.mockSpringComponent;
 
 public class CheckingOutTagsTest extends GitAbstractTest
 {

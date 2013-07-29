@@ -13,6 +13,7 @@ import com.atlassian.bamboo.repository.BranchDetectionCapableRepository;
 import com.atlassian.bamboo.repository.BranchMergingAwareRepository;
 import com.atlassian.bamboo.repository.CacheId;
 import com.atlassian.bamboo.repository.CachingAwareRepository;
+import com.atlassian.bamboo.repository.DeploymentAwareRepository;
 import com.atlassian.bamboo.repository.PushCapableRepository;
 import com.atlassian.bamboo.repository.Repository;
 import com.atlassian.bamboo.repository.RepositoryException;
@@ -43,8 +44,8 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
                                                                               BranchDetectionCapableRepository,
                                                                               CachingAwareRepository,
                                                                               PushCapableRepository,
-                                                                              BranchMergingAwareRepository
-
+                                                                              BranchMergingAwareRepository,
+                                                                              DeploymentAwareRepository
 {
     @SuppressWarnings("unused")
     private static final Logger log = Logger.getLogger(GitHubRepository.class);

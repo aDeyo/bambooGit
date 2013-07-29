@@ -18,6 +18,7 @@ import com.atlassian.bamboo.v2.build.agent.LocalBuildAgent;
 import com.atlassian.bamboo.v2.build.agent.messages.RemoteBambooMessage;
 import com.atlassian.sal.api.message.I18nResolver;
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.HashMultimap;
@@ -191,8 +192,9 @@ public class GitCacheHandler
         }
 
         final File cacheRootDir = getCacheRootDir();
-        for (String key : keys)
+        for (final String key : keys)
         {
+            Preconditions.checkArgument(StringUtils.isAlphanumeric(key), "directory traversal blocked");
             final File cacheCandidate = new File(cacheRootDir, key);
 
             if (cacheCandidate.exists())
