@@ -23,6 +23,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang.StringUtils;
@@ -326,46 +327,76 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
     }
 
     // -------------------------------------------------------------------------------------------------- Helper Methods
-    private String extractBranchName(String possibleBranch)
+    private boolean isLocalRef(String refString)
     {
-        if (possibleBranch.startsWith(Constants.R_HEADS))
-        {
-            return StringUtils.removeStart(possibleBranch, Constants.R_HEADS);
-        }
-        else if (possibleBranch.startsWith(REMOTE_ORIGIN))
-        {
-            return StringUtils.removeStart(possibleBranch, REMOTE_ORIGIN);
-        }
-
-        return null;
+        return refString.startsWith(Constants.R_HEADS);
     }
 
+    private boolean isMatchingLocalRef(String refString, String branchName)
+    {
+        return isLocalRef(refString) && StringUtils.removeStart(refString, Constants.R_HEADS).equals(branchName);
+    }
+
+    private boolean isMatchingRemoteRef(String refString, String branchName)
+    {
+        return refString.startsWith(REMOTE_ORIGIN) && StringUtils.removeStart(refString, REMOTE_ORIGIN).equals(branchName);
+    }
+
+    //Because we no longer do file copy from cache when creating git repo we don't automagically get all the local heads.
+    //That's why we need to look in refs/remotes/origin/ when determining if revision is head of a branch.
+    //Subsequent git checkout <branchname> works correctly, that is creates correct local ref and connects it with remote branch
+    //We must check however if local branch doesn't exist when doing this.
     public String getPossibleBranchNameForCheckout(File workingDirectory, String revision, String configuredBranchName) throws RepositoryException
     {
-        GitCommandBuilder commandBuilder = createCommandBuilder("log", "-1", ENCODING_OPTION, "--format=%d", "--decorate=full");
-        commandBuilder.append(revision);
-        final GitStringOutputHandler outputHandler = new GitStringOutputHandler(GIT_OUTPUT_ENCODING);
+        String branchName = StringUtils.isBlank(configuredBranchName) ? Constants.MASTER : configuredBranchName;
+
+        GitCommandBuilder commandBuilder = createCommandBuilder("show-ref", branchName);
+        final LineOutputHandlerImpl outputHandler = new LineOutputHandlerImpl();
         runCommand(commandBuilder, workingDirectory, outputHandler);
 
-        String revisionDescription = outputHandler.getOutput();
-        log.debug("Full output: " + revisionDescription);
-
-        if (StringUtils.isNotBlank(revisionDescription))
+        Iterable<String> lines = outputHandler.getLines();
+        if (log.isDebugEnabled())
         {
-            Set<String> possibleBranches = Sets.newHashSet(
-                    Splitter.on(',').trimResults().split(
-                            CharMatcher.anyOf("()").removeFrom(StringUtils.trim(revisionDescription))));
-            for (String possibleBranch : possibleBranches)
+            log.debug("--- Full output: ---\n");
+            for (String line : lines)
             {
-                String possibleBranchName = extractBranchName(possibleBranch);
-                if (possibleBranchName != null)
+                log.debug(line);
+            }
+            log.debug("--- End of output: ---\n");
+        }
+
+        boolean remoteRefFound = false;
+        //line format is: <sha> <refString>
+        for (String line : lines)
+        {
+            line = line.trim();
+            Iterable<String> splitLine = Splitter.on(' ').trimResults().split(line);
+            String sha = Iterables.getFirst(splitLine, null);
+            String refString = Iterables.getLast(splitLine, null);
+            if (isLocalRef(refString))
+            {
+                if (isMatchingLocalRef(refString, branchName))
                 {
-                    if (possibleBranchName.equals(configuredBranchName) || (StringUtils.isBlank(configuredBranchName) && possibleBranchName.equals(Constants.MASTER)))
+                    if (revision.equals(sha))
                     {
-                        return possibleBranchName;
+                        return branchName;
+                    }
+                    else
+                    {
+                        return "";
                     }
                 }
             }
+            else if (isMatchingRemoteRef(refString, branchName) && revision.equals(sha))
+            {
+                remoteRefFound = true;
+            }
+        }
+
+        if (remoteRefFound)
+        {
+            //we've found matching remote with correct sha but no matching local branch
+            return branchName;
         }
         return "";
     }
