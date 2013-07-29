@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.atlassian.bamboo.plugins</groupId>
   <artifactId>atlassian-bamboo-plugin-git</artifactId>
-  <version>3.0.18-SNAPSHOT</version>
+  <version>3.0.19-SNAPSHOT</version>
   <packaging>atlassian-plugin</packaging>
 
   <name>Atlassian Bamboo Git Repository Plugin</name>
@@ -72,8 +72,6 @@
           <artifactId>jsch</artifactId>
         </exclusion>
       </exclusions>
-      <scope>system</scope>
-      <systemPath>${basedir}/libs/org.eclipse.jgit-1.1.0.201109151100-r-ATLASSIAN-4.jar</systemPath>
     </dependency>
     <dependency>
       <groupId>log4j</groupId>
