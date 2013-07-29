@@ -327,14 +327,9 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
     }
 
     // -------------------------------------------------------------------------------------------------- Helper Methods
-    private boolean isLocalRef(String refString)
-    {
-        return refString.startsWith(Constants.R_HEADS);
-    }
-
     private boolean isMatchingLocalRef(String refString, String branchName)
     {
-        return isLocalRef(refString) && StringUtils.removeStart(refString, Constants.R_HEADS).equals(branchName);
+        return refString.startsWith(Constants.R_HEADS) && StringUtils.removeStart(refString, Constants.R_HEADS).equals(branchName);
     }
 
     private boolean isMatchingRemoteRef(String refString, String branchName)
@@ -373,18 +368,17 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
             Iterable<String> splitLine = Splitter.on(' ').trimResults().split(line);
             String sha = Iterables.getFirst(splitLine, null);
             String refString = Iterables.getLast(splitLine, null);
-            if (isLocalRef(refString))
+            if (isMatchingLocalRef(refString, branchName))
             {
-                if (isMatchingLocalRef(refString, branchName))
+                if (revision.equals(sha))
                 {
-                    if (revision.equals(sha))
-                    {
-                        return branchName;
-                    }
-                    else
-                    {
-                        return "";
-                    }
+                    //local branch found with correct sha: proceed with branch checkout
+                    return branchName;
+                }
+                else
+                {
+                    //local branch found with different sha: give up
+                    return "";
                 }
             }
             else if (isMatchingRemoteRef(refString, branchName) && revision.equals(sha))
@@ -395,7 +389,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
 
         if (remoteRefFound)
         {
-            //we've found matching remote with correct sha but no matching local branch
+            //we've found matching remote with correct sha but no matching local branch: proceed with branch checkout, it will create local branch
             return branchName;
         }
         return "";
