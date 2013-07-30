@@ -30,7 +30,7 @@ import com.atlassian.bamboo.commit.CommitContext;
 import com.atlassian.bamboo.commit.CommitContextImpl;
 import com.atlassian.bamboo.core.TransportProtocol;
 import com.atlassian.bamboo.credentials.CredentialsManager;
-import com.atlassian.bamboo.credentials.SshCredentials;
+import com.atlassian.bamboo.credentials.Credentials;
 import com.atlassian.bamboo.plan.PlanKey;
 import com.atlassian.bamboo.plan.PlanKeys;
 import com.atlassian.bamboo.plan.branch.BranchIntegrationHelper;
@@ -790,9 +790,9 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
             return Lists.newArrayList();
         }
         
-        return Lists.transform(credentialsManager.findSshCredentials(), new Function<SshCredentials, NameValuePair>()
+        return Lists.transform(credentialsManager.findCredentials(), new Function<Credentials, NameValuePair>()
         {
-            public NameValuePair apply(SshCredentials credentials)
+            public NameValuePair apply(Credentials credentials)
             {
                 return new NameValuePair(Long.toString(credentials.getId()), credentials.getName());
             }

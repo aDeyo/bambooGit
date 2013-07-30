@@ -5,7 +5,8 @@ import java.io.Serializable;
 import org.jetbrains.annotations.NotNull;
 
 import com.atlassian.bamboo.credentials.CredentialsManager;
-import com.atlassian.bamboo.credentials.SshCredentials;
+import com.atlassian.bamboo.credentials.Credentials;
+import com.atlassian.bamboo.credentials.SshCredentialsImpl;
 import com.atlassian.bamboo.plan.branch.VcsBranch;
 import com.atlassian.bamboo.plan.branch.VcsBranchImpl;
 import com.atlassian.bamboo.ssh.ProxyRegistrationInfo;
@@ -240,10 +241,10 @@ public final class GitRepositoryAccessData implements Serializable
     {
         if(!decryptedCredentials && useSharedCredentials && sharedCredentialsId != null)
         {
-            SshCredentials sshCredentials = credentialsManager.getSshCredentials(this.sharedCredentialsId);
-            if(sshCredentials != null)
+            Credentials credentials = credentialsManager.getCredentials(this.sharedCredentialsId);
+            if(credentials != null)
             {
-                return sshCredentials.getSshKey();
+                return new SshCredentialsImpl(credentials).getSshKey();
             }
         }
         return sshKey;
@@ -253,10 +254,10 @@ public final class GitRepositoryAccessData implements Serializable
     {
         if(!decryptedCredentials && useSharedCredentials  && sharedCredentialsId != null)
         {
-            SshCredentials sshCredentials = credentialsManager.getSshCredentials(this.sharedCredentialsId);
-            if(sshCredentials != null)
+            Credentials credentials = credentialsManager.getCredentials(this.sharedCredentialsId);
+            if(credentials != null)
             {
-                return sshCredentials.getSshPassphrase();
+                return new SshCredentialsImpl(credentials).getSshPassphrase();
             }
         }
         

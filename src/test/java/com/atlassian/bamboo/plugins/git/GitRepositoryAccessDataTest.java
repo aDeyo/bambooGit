@@ -1,15 +1,19 @@
 package com.atlassian.bamboo.plugins.git;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import com.atlassian.bamboo.credentials.Credentials;
+import com.atlassian.bamboo.credentials.CredentialsImpl;
 import com.atlassian.bamboo.credentials.CredentialsManager;
-import com.atlassian.bamboo.credentials.SshCredentials;
-import com.atlassian.bamboo.credentials.SshCredentialsImpl;
 
 
 @RunWith(MockitoJUnitRunner.class)
@@ -67,8 +71,14 @@ public class GitRepositoryAccessDataTest
     public void whenYouUseSHARED_CREDENTIALSTheObjectReturnsSshKeyforAuthenticationType()
     {
         Long credentialsId = 3L;
-        SshCredentials credentials = new SshCredentialsImpl("nameSshCredentials", "sshKey", "sshPassphrase");
-        when(credentialsManager.getSshCredentials(credentialsId)).thenReturn(credentials);
+        String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n" +
+            "<configuration>\n" +
+            "  <sshKey>sshKey</sshKey>\n" +
+            "  <sshPassphrase>sshPassphrase</sshPassphrase>\n" +
+            "</configuration>\n";
+        
+        Credentials credentials = new CredentialsImpl("nameSshCredentials", xml);
+        when(credentialsManager.getCredentials(credentialsId)).thenReturn(credentials);
         
         GitRepositoryAccessData accessData = GitRepositoryAccessData.builder()
             .credentialsManager(credentialsManager)
@@ -96,7 +106,7 @@ public class GitRepositoryAccessDataTest
     public void whenYouUseSHARED_CREDENTIALSTheObjectReturnsSshKeyAndTheSharedCredentialsAreNotFound()
     {
         Long credentialsId = 3L;
-        when(credentialsManager.getSshCredentials(credentialsId)).thenReturn(null);
+        when(credentialsManager.getCredentials(credentialsId)).thenReturn(null);
         
         GitRepositoryAccessData accessData = GitRepositoryAccessData.builder()
             .credentialsManager(credentialsManager)
@@ -163,16 +173,22 @@ public class GitRepositoryAccessDataTest
         assertEquals(GitAuthenticationType.SSH_KEYPAIR, accessData.getAuthenticationType());
         assertEquals("decrypted_sshKeyValue", accessData.getSshKey());
         assertEquals("decrypted_sshPassphrase", accessData.getSshPassphrase());
-        verify(credentialsManager, times(0)).getSshCredentials(anyLong());
+        verify(credentialsManager, times(0)).getCredentials(anyLong());
         
     }
     
     @Test
-    public void whenYouUseSHARED_CREDENTIALSifYouSetDecryptedCredentialsTheSshKeyTheValuesFromSharedCredentialsAreReturned()
+    public void whenYouUseSHARED_CREDENTIALSifYouSetDecryptedCredentialsFalseTheSshKeyTheValuesAreReturnedFromSharedCredentials()
     {
         Long credentialsId = 3L;
-        SshCredentials credentials = new SshCredentialsImpl("nameSshCredentials", "sshKey", "sshPassphrase");
-        when(credentialsManager.getSshCredentials(credentialsId)).thenReturn(credentials);
+        String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n" +
+            "<configuration>\n" +
+            "  <sshKey>sshKey</sshKey>\n" +
+            "  <sshPassphrase>sshPassphrase</sshPassphrase>\n" +
+            "</configuration>\n";
+        
+        Credentials credentials = new CredentialsImpl("nameSshCredentials", xml);
+        when(credentialsManager.getCredentials(credentialsId)).thenReturn(credentials);
         
         GitRepositoryAccessData accessData = GitRepositoryAccessData.builder()
             .credentialsManager(credentialsManager)
@@ -180,8 +196,8 @@ public class GitRepositoryAccessDataTest
             .repositoryUrl("repositoryUrl")
             .username("")
             .password("")
-            .sshKey("decrypted_sshKeyValue")
-            .sshPassphrase("decrypted_sshPassphrase")
+            .sshKey("thisValueShouldNotBeReturned")
+            .sshPassphrase("thisValueShouldNotBeReturned")
              // decryptedCredentials <- false by default
             .sharedCredentialsId(credentialsId)
             .build();
