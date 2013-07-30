@@ -21,7 +21,7 @@
   </scm>
 
   <properties>
-    <bamboo.version>5.0-SNAPSHOT</bamboo.version>
+    <bamboo.version>5.0.1</bamboo.version>
     <bamboo.data.version>3.2.2</bamboo.data.version>
 
     <!-- after upgrading atlassian.rest.version do not forget to update jackson.version and jersey.version with values from com.atlassian.plugins.rest:atlassian-rest-parent -->
