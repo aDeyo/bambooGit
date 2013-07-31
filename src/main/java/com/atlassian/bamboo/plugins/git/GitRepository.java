@@ -1,28 +1,5 @@
 package com.atlassian.bamboo.plugins.git;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
-
-import org.apache.commons.configuration.HierarchicalConfiguration;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.log4j.Logger;
-import org.eclipse.jgit.errors.TransportException;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.transport.URIish;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import com.atlassian.bamboo.author.Author;
 import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.atlassian.bamboo.build.logger.NullBuildLogger;
@@ -79,6 +56,29 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.opensymphony.webwork.ServletActionContext;
 import com.opensymphony.xwork.ValidationAware;
+import org.apache.commons.configuration.HierarchicalConfiguration;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.log4j.Logger;
+import org.eclipse.jgit.errors.TransportException;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.transport.URIish;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+
 
 public class GitRepository extends AbstractStandaloneRepository implements MavenPomAccessorCapableRepository,
                                                                            SelectableAuthenticationRepository,
