@@ -19,7 +19,6 @@ import com.atlassian.bamboo.variable.VariableContextBuilder;
 import com.atlassian.bamboo.variable.VariableDefinitionContext;
 import com.atlassian.bamboo.variable.VariableDefinitionManager;
 import com.google.common.collect.Maps;
-import com.opensymphony.xwork.DefaultTextProvider;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.ConcurrentRefUpdateException;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
@@ -92,7 +91,7 @@ public class IncludeExcludeAwareChangeDetectionTest extends GitAbstractTest
         DefaultChangeDetectionManager changeDetectionManager = new DefaultChangeDetectionManager(
                 Mockito.mock(BuildContextFactory.class),
                 mockBuildLoggerManager,
-                DefaultTextProvider.INSTANCE,
+                null,
                 mockVariableDefinitionManager,
                 customVariableContext,
                 Mockito.mock(PlanVcsRevisionHistoryService.class),
