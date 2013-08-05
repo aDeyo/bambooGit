@@ -115,7 +115,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     private static final String TEMPORARY_GIT_SSH_KEY_CHANGE = "temporary.git.ssh.key.change";
 
     private static final GitAuthenticationType defaultAuthenticationType = GitAuthenticationType.NONE;
-    private static boolean USE_SHALLOW_CLONES = new SystemProperty(false, "atlassian.bamboo.git.useShallowClones", "ATLASSIAN_BAMBOO_GIT_USE_SHALLOW_CLONES").getValue(true);
+    protected static boolean USE_SHALLOW_CLONES = new SystemProperty(false, "atlassian.bamboo.git.useShallowClones", "ATLASSIAN_BAMBOO_GIT_USE_SHALLOW_CLONES").getValue(true);
 
     static final int DEFAULT_COMMAND_TIMEOUT_IN_MINUTES = 180;
 

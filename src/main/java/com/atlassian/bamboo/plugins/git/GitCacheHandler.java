@@ -158,10 +158,6 @@ public class GitCacheHandler
         }
 
         final Collection<String> features = new ArrayList<String>(2);
-        if (accessData.isUseShallowClones())
-        {
-            features.add("shallow clones");
-        }
         if (accessData.isUseRemoteAgentCache())
         {
             features.add("remote agent caching");

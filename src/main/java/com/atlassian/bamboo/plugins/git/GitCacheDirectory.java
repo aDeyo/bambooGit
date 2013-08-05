@@ -48,9 +48,7 @@ public class GitCacheDirectory
     @VisibleForTesting
     static String calculateRepositorySha(@NotNull final GitRepositoryAccessData repositoryData)
     {
-        return repositoryData.isUseShallowClones() ?
-                calculateAggregateSha(repositoryData.getRepositoryUrl(), repositoryData.getUsername(), repositoryData.getVcsBranch().getName()) :
-                calculateAggregateSha(repositoryData.getRepositoryUrl(), repositoryData.getUsername());
+        return calculateAggregateSha(repositoryData.getRepositoryUrl(), repositoryData.getUsername());
     }
     
     static String calculateAggregateSha(String... params)
