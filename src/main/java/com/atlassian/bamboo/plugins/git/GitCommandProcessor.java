@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.opensymphony.util.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.log4j.Logger;
@@ -245,7 +246,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         {
             commandBuilder.shallowClone();
         }
-        File shallowFile = new File(new File(workingDirectory, ".git"), "shallow");
+        File shallowFile = new File(new File(workingDirectory, Constants.DOT_GIT), "shallow");
         if (!useShallow && shallowFile.exists())
         {
             //directory has shallows: we need to make it deep
@@ -259,6 +260,13 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
             commandBuilder.append("--progress");
         }
         runCommand(commandBuilder, workingDirectory, new LoggingOutputHandler(buildLogger));
+
+        //BDEV-3230: it can happen (e.g. with Stash) that fetch returns nothing and gives no error
+        File fetchHeadFile = new File(new File(workingDirectory, Constants.DOT_GIT), Constants.FETCH_HEAD);
+        if (!fetchHeadFile.exists() || StringUtils.isBlank(FileUtils.readFile(fetchHeadFile)))
+        {
+            throw new RepositoryException("fatal: FETCH_HEAD is empty after fetch.");
+        }
     }
 
     public void runCloneCommand(@NotNull final File workingDirectory, @NotNull final String repositoryUrl, boolean useShallowClone, boolean verboseLogs) throws RepositoryException
