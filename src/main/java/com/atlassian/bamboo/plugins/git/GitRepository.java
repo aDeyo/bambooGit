@@ -351,14 +351,14 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
             {
                 try
                 {
-                    helper.fetch(sourceDirectory, targetRevision, doShallowFetch);
+                    helper.fetch(sourceDirectory, fetchRevision, doShallowFetch);
                     return helper.checkout(null, sourceDirectory, targetRevision, previousRevision);
                 }
                 catch (Exception e)
                 {
                     rethrowOrRemoveDirectory(e, buildLogger, sourceDirectory, "repository.git.messages.rsRecover.failedToCheckout");
                     buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.cleanedSourceDirectory", sourceDirectory));
-                    helper.fetch(sourceDirectory, targetRevision, false);
+                    helper.fetch(sourceDirectory, fetchRevision, false);
                     buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.fetchingCompleted", sourceDirectory));
                     String returnRevision = helper.checkout(null, sourceDirectory, targetRevision, null);
                     buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.checkoutCompleted"));
