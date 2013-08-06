@@ -41,7 +41,7 @@ public class GitCacheDirectoryTest extends GitAbstractTest
         return new Object[][] {
                 {"repositoryUrl", true, null},
                 {"username", true, null},
-                {"branch", true, VcsBranch.class},
+                {"branch", false, VcsBranch.class},
 
                 {"password", false, null},
                 {"sshKey", false, null},
@@ -81,7 +81,7 @@ public class GitCacheDirectoryTest extends GitAbstractTest
     }
 
     @Test
-    public void testShallowGetsDifferentCache() throws Exception
+    public void testShallowGetsTheSameCache() throws Exception
     {
         GitRepositoryAccessData accessData = createSampleAccessData(false);
         GitRepositoryAccessData accessData2 = createSampleAccessData(true);
@@ -90,24 +90,7 @@ public class GitCacheDirectoryTest extends GitAbstractTest
         File cache1 = GitCacheDirectory.getCacheDirectory(baseDir, accessData);
         File cache2 = GitCacheDirectory.getCacheDirectory(baseDir, accessData2);
 
-        Assert.assertFalse(cache1.equals(cache2));
-
-    }
-
-    @Test
-    public void testShallowGetsDifferentCacheWithEmptyBranch() throws Exception
-    {
-        GitRepositoryAccessData accessDataNonShallow = createSampleAccessData(false);
-        GitRepositoryAccessData accessDataShallow = createSampleAccessData(true);
-
-        accessDataNonShallow = GitRepositoryAccessData.builder(accessDataNonShallow).branch(new VcsBranchImpl("")).build();
-        accessDataShallow = GitRepositoryAccessData.builder(accessDataShallow).branch(new VcsBranchImpl("")).build();
-
-        File baseDir = createTempDirectory();
-        File cache1 = GitCacheDirectory.getCacheDirectory(baseDir, accessDataNonShallow);
-        File cache2 = GitCacheDirectory.getCacheDirectory(baseDir, accessDataShallow);
-
-        Assert.assertFalse(cache1.equals(cache2));
+        Assert.assertTrue(cache1.equals(cache2));
 
     }
 
