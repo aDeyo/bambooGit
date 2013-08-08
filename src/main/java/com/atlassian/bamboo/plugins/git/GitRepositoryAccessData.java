@@ -25,13 +25,10 @@ public final class GitRepositoryAccessData implements Serializable
     private boolean useSubmodules;
     private int commandTimeout;
     private boolean verboseLogs;
-    private boolean useSharedCredentials;
     private Long sharedCredentialsId;
-    private boolean decryptedCredentials;
 
     private transient ProxyRegistrationInfo proxyRegistrationInfo;
-    private transient CredentialsManager credentialsManager;
-    
+    public boolean useSharedCredentials;
 
     public static final class Builder
     {
@@ -48,8 +45,6 @@ public final class GitRepositoryAccessData implements Serializable
         private int commandTimeout;
         private boolean verboseLogs;
         private Long sharedCredentialsId;
-        private boolean decryptedCredentials;
-        private CredentialsManager credentialsManager;
 
         public Builder clone(GitRepositoryAccessData gitRepositoryAccessData)
         {
@@ -66,8 +61,6 @@ public final class GitRepositoryAccessData implements Serializable
             this.commandTimeout = gitRepositoryAccessData.commandTimeout;
             this.verboseLogs = gitRepositoryAccessData.verboseLogs;
             this.sharedCredentialsId = gitRepositoryAccessData.sharedCredentialsId;
-            this.credentialsManager = gitRepositoryAccessData.credentialsManager;
-            this.decryptedCredentials = gitRepositoryAccessData.decryptedCredentials;
             return this;
         }
 
@@ -154,18 +147,7 @@ public final class GitRepositoryAccessData implements Serializable
             this.sharedCredentialsId = sharedCredentialsId;
             return this;
         }
-
-        public Builder credentialsManager(CredentialsManager credentialsManager)
-        {
-            this.credentialsManager = credentialsManager;
-            return this;
-        }
-        
-        public Builder decryptedCredentials(boolean decryptedCredentials)
-        {
-            this.decryptedCredentials = decryptedCredentials;
-            return this;
-        }
+    
 
         public GitRepositoryAccessData build()
         {
@@ -183,15 +165,13 @@ public final class GitRepositoryAccessData implements Serializable
             data.commandTimeout = this.commandTimeout;
             data.verboseLogs = this.verboseLogs;
             data.sharedCredentialsId = this.sharedCredentialsId;
-            data.credentialsManager = this.credentialsManager;
-            data.decryptedCredentials = this.decryptedCredentials;
             data.useSharedCredentials = GitAuthenticationType.SHARED_CREDENTIALS.equals(this.authenticationType);
             return data;
         }
       
     }
 
-   public static Builder builder()
+    public static Builder builder()
     {
         return new Builder();
     }
@@ -239,28 +219,11 @@ public final class GitRepositoryAccessData implements Serializable
 
     public String getSshKey()
     {
-        if(!decryptedCredentials && useSharedCredentials && sharedCredentialsId != null)
-        {
-            Credentials credentials = credentialsManager.getCredentials(this.sharedCredentialsId);
-            if(credentials != null)
-            {
-                return new SshCredentialsImpl(credentials).getSshKey();
-            }
-        }
         return sshKey;
     }
 
     public String getSshPassphrase()
     {
-        if(!decryptedCredentials && useSharedCredentials  && sharedCredentialsId != null)
-        {
-            Credentials credentials = credentialsManager.getCredentials(this.sharedCredentialsId);
-            if(credentials != null)
-            {
-                return new SshCredentialsImpl(credentials).getSshPassphrase();
-            }
-        }
-        
         return sshPassphrase;
     }
 

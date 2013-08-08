@@ -8,6 +8,8 @@ import com.atlassian.bamboo.commit.CommitContextImpl;
 import com.atlassian.bamboo.core.TransportProtocol;
 import com.atlassian.bamboo.credentials.CredentialsManager;
 import com.atlassian.bamboo.credentials.Credentials;
+import com.atlassian.bamboo.credentials.SshCredentials;
+import com.atlassian.bamboo.credentials.SshCredentialsImpl;
 import com.atlassian.bamboo.plan.PlanKey;
 import com.atlassian.bamboo.plan.PlanKeys;
 import com.atlassian.bamboo.plan.branch.BranchIntegrationHelper;
@@ -611,23 +613,39 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     public void populateFromConfig(@NotNull HierarchicalConfiguration config)
     {
         super.populateFromConfig(config);
-
+        
+        Long sharedCredentialsId = config.getLong(REPOSITORY_GIT_SHAREDCREDENTIALS, null);
+        String sshPassphrase = config.getString(REPOSITORY_GIT_SSH_PASSPHRASE);
+        String sshKey = config.getString(REPOSITORY_GIT_SSH_KEY, "");
+        GitAuthenticationType gitAuthenticationType = safeParseAuthenticationType(config.getString(REPOSITORY_GIT_AUTHENTICATION_TYPE));
+        
+        if(gitAuthenticationType.equals(GitAuthenticationType.SHARED_CREDENTIALS) && credentialsManager != null && sharedCredentialsId != null)
+        {            
+            Credentials credentials = credentialsManager.getCredentials(sharedCredentialsId);
+            if(credentials != null)
+            {
+                SshCredentials sshCredentials = new SshCredentialsImpl(credentials);
+                sshKey = sshCredentials.getSshKey();
+                sshPassphrase = sshCredentials.getSshPassphrase();
+            }
+        }
+        
         final VcsBranchImpl branch = new VcsBranchImpl(StringUtils.defaultIfEmpty(config.getString(REPOSITORY_GIT_BRANCH, ""), "master"));
+        
         accessData = GitRepositoryAccessData.builder()
                 .repositoryUrl(StringUtils.trimToEmpty(config.getString(REPOSITORY_GIT_REPOSITORY_URL)))
                 .username(config.getString(REPOSITORY_GIT_USERNAME, ""))
                 .password(config.getString(REPOSITORY_GIT_PASSWORD))
                 .branch(branch)
-                .sshKey(config.getString(REPOSITORY_GIT_SSH_KEY, ""))
-                .sshPassphrase(config.getString(REPOSITORY_GIT_SSH_PASSPHRASE))
-                .authenticationType(safeParseAuthenticationType(config.getString(REPOSITORY_GIT_AUTHENTICATION_TYPE)))
+                .sshKey(sshKey)
+                .sshPassphrase(sshPassphrase)
+                .authenticationType(gitAuthenticationType)
                 .useShallowClones(config.getBoolean(REPOSITORY_GIT_USE_SHALLOW_CLONES))
                 .useRemoteAgentCache(config.getBoolean(REPOSITORY_GIT_USE_REMOTE_AGENT_CACHE, false))
                 .useSubmodules(config.getBoolean(REPOSITORY_GIT_USE_SUBMODULES, false))
                 .commandTimeout(config.getInt(REPOSITORY_GIT_COMMAND_TIMEOUT, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES))
                 .verboseLogs(config.getBoolean(REPOSITORY_GIT_VERBOSE_LOGS, false))
                 .sharedCredentialsId(config.getLong(REPOSITORY_GIT_SHAREDCREDENTIALS, null))
-                .credentialsManager(credentialsManager)
                 .build();
 
         pathToPom = config.getString(REPOSITORY_GIT_MAVEN_PATH);
@@ -805,7 +823,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
             return Lists.newArrayList();
         }
         
-        return Lists.transform(credentialsManager.findCredentials(), new Function<Credentials, NameValuePair>()
+        return Lists.transform(credentialsManager.getAllCredentials(), new Function<Credentials, NameValuePair>()
         {
             public NameValuePair apply(Credentials credentials)
             {
@@ -852,8 +870,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                 .username(substituteString(accessData.getUsername()))
                 .password(encryptionService.decrypt(accessData.getPassword()))
                 .sshKey(encryptionService.decrypt(accessData.getSshKey()))
-                .sshPassphrase(encryptionService.decrypt(accessData.getSshPassphrase()))
-                .decryptedCredentials(true);             
+                .sshPassphrase(encryptionService.decrypt(accessData.getSshPassphrase()));             
     }
 
     GitRepositoryAccessData getSubstitutedAccessData()
