@@ -5,7 +5,7 @@ import java.io.Serializable;
 import org.jetbrains.annotations.NotNull;
 
 import com.atlassian.bamboo.credentials.CredentialsManager;
-import com.atlassian.bamboo.credentials.Credentials;
+import com.atlassian.bamboo.credentials.CredentialsData;
 import com.atlassian.bamboo.credentials.SshCredentialsImpl;
 import com.atlassian.bamboo.plan.branch.VcsBranch;
 import com.atlassian.bamboo.plan.branch.VcsBranchImpl;

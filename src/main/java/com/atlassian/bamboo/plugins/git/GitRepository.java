@@ -1,5 +1,6 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.amazonaws.services.cloudfront.model.InvalidArgumentException;
 import com.atlassian.bamboo.author.Author;
 import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.atlassian.bamboo.build.logger.NullBuildLogger;
@@ -7,7 +8,7 @@ import com.atlassian.bamboo.commit.CommitContext;
 import com.atlassian.bamboo.commit.CommitContextImpl;
 import com.atlassian.bamboo.core.TransportProtocol;
 import com.atlassian.bamboo.credentials.CredentialsManager;
-import com.atlassian.bamboo.credentials.Credentials;
+import com.atlassian.bamboo.credentials.CredentialsData;
 import com.atlassian.bamboo.credentials.SshCredentials;
 import com.atlassian.bamboo.credentials.SshCredentialsImpl;
 import com.atlassian.bamboo.plan.PlanKey;
@@ -621,12 +622,15 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
         
         if(gitAuthenticationType.equals(GitAuthenticationType.SHARED_CREDENTIALS) && credentialsManager != null && sharedCredentialsId != null)
         {            
-            Credentials credentials = credentialsManager.getCredentials(sharedCredentialsId);
+            CredentialsData credentials = credentialsManager.getCredentials(sharedCredentialsId);
             if(credentials != null)
             {
                 SshCredentials sshCredentials = new SshCredentialsImpl(credentials);
                 sshKey = sshCredentials.getSshKey();
                 sshPassphrase = sshCredentials.getSshPassphrase();
+            }
+            else {
+                throw new InvalidArgumentException("Shared Credentials with id '" + sharedCredentialsId + " are not found");
             }
         }
         
@@ -823,9 +827,9 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
             return Lists.newArrayList();
         }
         
-        return Lists.transform(credentialsManager.getAllCredentials(), new Function<Credentials, NameValuePair>()
+        return Lists.transform(credentialsManager.getAllCredentials(), new Function<CredentialsData, NameValuePair>()
         {
-            public NameValuePair apply(Credentials credentials)
+            public NameValuePair apply(CredentialsData credentials)
             {
                 return new NameValuePair(Long.toString(credentials.getId()), credentials.getName());
             }
