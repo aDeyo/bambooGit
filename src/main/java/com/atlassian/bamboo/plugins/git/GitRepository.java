@@ -282,7 +282,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
         }
         catch (RuntimeException e)
         {
-            throw new RepositoryException(i18nResolver.getText("repository.git.messages.runtimeException"), e);
+            throw new RepositoryException(e.getMessage(), e);
         }
     }
 
