@@ -23,6 +23,7 @@ import com.atlassian.bamboo.v2.build.BuildContextImpl;
 import com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext;
 import com.atlassian.bamboo.variable.CustomVariableContext;
 import com.atlassian.bamboo.variable.CustomVariableContextImpl;
+import com.atlassian.bamboo.variable.VariableContext;
 import com.atlassian.bamboo.variable.VariableDefinitionContext;
 import com.atlassian.bamboo.ww2.actions.build.admin.create.BuildConfiguration;
 import com.atlassian.plugin.PluginAccessor;
@@ -270,7 +271,7 @@ public class GitAbstractTest
 
         Project project = Mockito.mock(Project.class);
         Mockito.when(chain.getProject()).thenReturn(project);
-        return new BuildContextImpl(chain, 1, null, null, null);
+        return new BuildContextImpl(chain, 1, null, null, null, Mockito.mock(VariableContext.class));
     }
 
     protected static File getCheckoutDir(GitRepository gitRepository)

@@ -124,7 +124,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     private static final String TEMPORARY_GIT_SSH_KEY_CHANGE = "temporary.git.ssh.key.change";
 
     private static final GitAuthenticationType defaultAuthenticationType = GitAuthenticationType.NONE;
-    private static boolean USE_SHALLOW_CLONES = new SystemProperty(false, "atlassian.bamboo.git.useShallowClones", "ATLASSIAN_BAMBOO_GIT_USE_SHALLOW_CLONES").getValue(true);
+    protected static boolean USE_SHALLOW_CLONES = new SystemProperty(false, "atlassian.bamboo.git.useShallowClones", "ATLASSIAN_BAMBOO_GIT_USE_SHALLOW_CLONES").getValue(true);
 
     static final int DEFAULT_COMMAND_TIMEOUT_IN_MINUTES = 180;
 
@@ -292,7 +292,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
         }
         catch (RuntimeException e)
         {
-            throw new RepositoryException(i18nResolver.getText("repository.git.messages.runtimeException"), e);
+            throw new RepositoryException(e.getMessage(), e);
         }
     }
 
@@ -330,7 +330,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                     {
                         try
                         {
-                            helper.fetch(cacheDirectory, fetchRevision, doShallowFetch);
+                            helper.fetch(cacheDirectory, fetchRevision, false);
                             helper.checkRevisionExistsInCacheRepository(cacheDirectory, targetRevision);
                         }
                         catch (Exception e)
@@ -361,14 +361,14 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
             {
                 try
                 {
-                    helper.fetch(sourceDirectory, targetRevision, doShallowFetch);
+                    helper.fetch(sourceDirectory, fetchRevision, doShallowFetch);
                     return helper.checkout(null, sourceDirectory, targetRevision, previousRevision);
                 }
                 catch (Exception e)
                 {
                     rethrowOrRemoveDirectory(e, buildLogger, sourceDirectory, "repository.git.messages.rsRecover.failedToCheckout");
                     buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.cleanedSourceDirectory", sourceDirectory));
-                    helper.fetch(sourceDirectory, targetRevision, false);
+                    helper.fetch(sourceDirectory, fetchRevision, false);
                     buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.fetchingCompleted", sourceDirectory));
                     String returnRevision = helper.checkout(null, sourceDirectory, targetRevision, null);
                     buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.checkoutCompleted"));

@@ -66,7 +66,19 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
     {
         super(accessData, buildLogger, i18nResolver);
         this.sshProxyService = sshProxyService;
-        this.gitCommandProcessor = new GitCommandProcessor(repository.getGitCapability(), buildLogger, accessData.getPassword(),
+        String passwordToObfuscate = accessData.getPassword();
+        if (StringUtils.isEmpty(passwordToObfuscate))
+        {
+            try
+            {
+                passwordToObfuscate = new URIish(accessData.getRepositoryUrl()).getPass();
+            }
+            catch (URISyntaxException e)
+            {
+                //do nothing
+            }
+        }
+        this.gitCommandProcessor = new GitCommandProcessor(repository.getGitCapability(), buildLogger, passwordToObfuscate,
                                                            accessData.getCommandTimeout(), accessData.isVerboseLogs());
         this.gitCommandProcessor.checkGitExistenceInSystem(repository.getWorkingDirectory());
         this.gitCommandProcessor.setSshCommand(repository.getSshCapability());

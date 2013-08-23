@@ -16,7 +16,6 @@ import com.atlassian.utils.process.LineOutputHandler;
 import com.atlassian.utils.process.OutputHandler;
 import com.atlassian.utils.process.PluggableProcessHandler;
 import com.atlassian.utils.process.StringOutputHandler;
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.cache.Cache;
@@ -25,7 +24,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.log4j.Logger;
@@ -245,7 +244,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         {
             commandBuilder.shallowClone();
         }
-        File shallowFile = new File(new File(workingDirectory, ".git"), "shallow");
+        File shallowFile = new File(new File(workingDirectory, Constants.DOT_GIT), "shallow");
         if (!useShallow && shallowFile.exists())
         {
             //directory has shallows: we need to make it deep
@@ -259,6 +258,20 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
             commandBuilder.append("--progress");
         }
         runCommand(commandBuilder, workingDirectory, new LoggingOutputHandler(buildLogger));
+
+        //BDEV-3230: it can happen (e.g. with Stash) that fetch returns nothing and gives no error
+        File fetchHeadFile = new File(new File(workingDirectory, Constants.DOT_GIT), Constants.FETCH_HEAD);
+        try
+        {
+            if (!fetchHeadFile.exists() || StringUtils.isBlank(FileUtils.readFileToString(fetchHeadFile)))
+            {
+                throw new RepositoryException("fatal: FETCH_HEAD is empty after fetch.");
+            }
+        }
+        catch (IOException e)
+        {
+            throw new RepositoryException("fatal: Error reading FETCH_HEAD file");
+        }
     }
 
     public void runCloneCommand(@NotNull final File workingDirectory, @NotNull final String repositoryUrl, boolean useShallowClone, boolean verboseLogs) throws RepositoryException

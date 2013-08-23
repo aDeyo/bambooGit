@@ -76,7 +76,14 @@ public class DeleteGitCacheDirectoryActionTest extends GitAbstractTest
 
     private static DeleteGitCacheDirectoryAction createDeleteAction(GitRepository repository)
     {
-        DeleteGitCacheDirectoryAction action = new DeleteGitCacheDirectoryAction();
+        DeleteGitCacheDirectoryAction action = new DeleteGitCacheDirectoryAction()
+        {
+            @Override
+            public String getText(java.lang.String key, java.util.List args)
+            {
+                return "";
+            }
+        };
         action.setBuildKey("BUILD-KEY-1");
         RepositoryDefinition repositoryDefinition = Mockito.mock(RepositoryDefinition.class, new Returns(repository));
         List<RepositoryDefinition> repositoryDefinitions = Collections.singletonList(repositoryDefinition);
