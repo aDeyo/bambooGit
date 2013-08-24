@@ -54,6 +54,7 @@ import com.atlassian.util.concurrent.Supplier;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -849,13 +850,13 @@ public class GitRepository
     }
     
     @NotNull
-    public List<NameValuePair> getSharedCredentials()
+    public Collection<NameValuePair> getSharedCredentials()
     {
-        return Lists.transform(credentialsAccessor.getAllCredentials(), new Function<CredentialsData, NameValuePair>() {
+        return ImmutableList.copyOf(Iterables.transform(credentialsAccessor.getAllCredentials(), new Function<CredentialsData, NameValuePair>() {
             public NameValuePair apply(CredentialsData credentials) {
                 return new NameValuePair(Long.toString(credentials.getId()), credentials.getName());
             }
-        });
+        }));
     }
 
     @Override
