@@ -669,7 +669,8 @@ public class GitRepository
     @Override
     public Iterable<Long> getSharedCredentialIds()
     {
-        return ImmutableList.of(accessData.getSharedCredentialsId());
+        final Long sharedCredentialsId = accessData.getSharedCredentialsId();
+        return sharedCredentialsId!=null ? ImmutableList.of(sharedCredentialsId) : Collections.<Long>emptyList();
     }
 
     @NotNull
