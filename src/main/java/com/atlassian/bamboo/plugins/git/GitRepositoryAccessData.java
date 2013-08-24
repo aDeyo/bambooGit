@@ -1,15 +1,12 @@
 package com.atlassian.bamboo.plugins.git;
 
-import java.io.Serializable;
-
-import org.jetbrains.annotations.NotNull;
-
-import com.atlassian.bamboo.credentials.CredentialsManager;
-import com.atlassian.bamboo.credentials.CredentialsData;
-import com.atlassian.bamboo.credentials.SshCredentialsImpl;
 import com.atlassian.bamboo.plan.branch.VcsBranch;
 import com.atlassian.bamboo.plan.branch.VcsBranchImpl;
 import com.atlassian.bamboo.ssh.ProxyRegistrationInfo;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.Serializable;
 
 public final class GitRepositoryAccessData implements Serializable
 {
@@ -28,7 +25,6 @@ public final class GitRepositoryAccessData implements Serializable
     private Long sharedCredentialsId;
 
     private transient ProxyRegistrationInfo proxyRegistrationInfo;
-    public boolean useSharedCredentials;
 
     public static final class Builder
     {
@@ -46,7 +42,7 @@ public final class GitRepositoryAccessData implements Serializable
         private boolean verboseLogs;
         private Long sharedCredentialsId;
 
-        public Builder clone(GitRepositoryAccessData gitRepositoryAccessData)
+        public Builder clone(final GitRepositoryAccessData gitRepositoryAccessData)
         {
             this.repositoryUrl = gitRepositoryAccessData.repositoryUrl;
             this.branch = gitRepositoryAccessData.branch;
@@ -165,7 +161,6 @@ public final class GitRepositoryAccessData implements Serializable
             data.commandTimeout = this.commandTimeout;
             data.verboseLogs = this.verboseLogs;
             data.sharedCredentialsId = this.sharedCredentialsId;
-            data.useSharedCredentials = GitAuthenticationType.SHARED_CREDENTIALS.equals(this.authenticationType);
             return data;
         }
       
@@ -229,16 +224,7 @@ public final class GitRepositoryAccessData implements Serializable
 
     public GitAuthenticationType getAuthenticationType()
     {
-        if(useSharedCredentials)
-        {
-            return GitAuthenticationType.SSH_KEYPAIR;
-        }
         return authenticationType;
-    }
-
-    public String getAuthenticationTypeString()
-    {
-        return  authenticationType != null ? authenticationType.name() : null;
     }
 
     public boolean isUseShallowClones()
@@ -276,6 +262,7 @@ public final class GitRepositoryAccessData implements Serializable
         this.proxyRegistrationInfo = proxyRegistrationInfo;
     }
 
+    @Nullable
     public Long getSharedCredentialsId()
     {
         return sharedCredentialsId;
