@@ -2,6 +2,7 @@ package com.atlassian.bamboo.plugins.git;
 
 import com.atlassian.bamboo.FeatureManager;
 import com.atlassian.bamboo.build.BuildLoggerManager;
+import com.atlassian.bamboo.build.context.BuildContextBuilderImpl;
 import com.atlassian.bamboo.build.fileserver.BuildDirectoryManager;
 import com.atlassian.bamboo.build.logger.NullBuildLogger;
 import com.atlassian.bamboo.chains.Chain;
@@ -9,6 +10,7 @@ import com.atlassian.bamboo.core.TransportProtocol;
 import com.atlassian.bamboo.plan.PlanKey;
 import com.atlassian.bamboo.plan.PlanKeys;
 import com.atlassian.bamboo.plan.branch.BranchIntegrationHelper;
+import com.atlassian.bamboo.plan.branch.BranchIntegrationService;
 import com.atlassian.bamboo.plan.branch.VcsBranchImpl;
 import com.atlassian.bamboo.project.Project;
 import com.atlassian.bamboo.repository.RepositoryException;
@@ -19,12 +21,12 @@ import com.atlassian.bamboo.util.BambooFileUtils;
 import com.atlassian.bamboo.utils.i18n.DefaultI18nBean;
 import com.atlassian.bamboo.utils.i18n.I18nResolverAdapter;
 import com.atlassian.bamboo.v2.build.BuildContext;
-import com.atlassian.bamboo.v2.build.BuildContextImpl;
 import com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext;
 import com.atlassian.bamboo.variable.CustomVariableContext;
 import com.atlassian.bamboo.variable.CustomVariableContextImpl;
 import com.atlassian.bamboo.variable.VariableContext;
 import com.atlassian.bamboo.variable.VariableDefinitionContext;
+import com.atlassian.bamboo.variable.VariableDefinitionManager;
 import com.atlassian.bamboo.ww2.actions.build.admin.create.BuildConfiguration;
 import com.atlassian.plugin.PluginAccessor;
 import com.atlassian.sal.api.message.I18nResolver;
@@ -271,7 +273,11 @@ public class GitAbstractTest
 
         Project project = Mockito.mock(Project.class);
         Mockito.when(chain.getProject()).thenReturn(project);
-        return new BuildContextImpl(chain, 1, null, null, null, Mockito.mock(VariableContext.class));
+        return new BuildContextBuilderImpl(Mockito.mock(BranchIntegrationService.class), Mockito.mock(VariableDefinitionManager.class))
+                .plan(chain)
+                .buildNumber(1)
+                .variableContext(Mockito.mock(VariableContext.class))
+                .build();
     }
 
     protected static File getCheckoutDir(GitRepository gitRepository)
