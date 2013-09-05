@@ -6,6 +6,11 @@ import com.atlassian.bamboo.build.logger.NullBuildLogger;
 import com.atlassian.bamboo.commit.CommitContext;
 import com.atlassian.bamboo.commit.CommitContextImpl;
 import com.atlassian.bamboo.core.TransportProtocol;
+import com.atlassian.bamboo.credentials.CredentialsAccessor;
+import com.atlassian.bamboo.credentials.CredentialsData;
+import com.atlassian.bamboo.credentials.PrivateKeyCredentials;
+import com.atlassian.bamboo.credentials.SharedCredentialDepender;
+import com.atlassian.bamboo.credentials.SshCredentialsImpl;
 import com.atlassian.bamboo.plan.PlanKey;
 import com.atlassian.bamboo.plan.PlanKeys;
 import com.atlassian.bamboo.plan.branch.BranchIntegrationHelper;
@@ -47,11 +52,15 @@ import com.atlassian.bamboo.ww2.actions.build.admin.create.BuildConfiguration;
 import com.atlassian.sal.api.message.I18nResolver;
 import com.atlassian.util.concurrent.Supplier;
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.opensymphony.webwork.ServletActionContext;
 import com.opensymphony.xwork.ValidationAware;
+import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -75,18 +84,22 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
-public class GitRepository extends AbstractStandaloneRepository implements MavenPomAccessorCapableRepository,
-                                                                           SelectableAuthenticationRepository,
-                                                                           CustomVariableProviderRepository,
-                                                                           CustomSourceDirectoryAwareRepository,
-                                                                           RequirementsAwareRepository,
-                                                                           AdvancedConfigurationAwareRepository,
-                                                                           BranchDetectionCapableRepository,
-                                                                           PushCapableRepository,
-                                                                           CachingAwareRepository,
-                                                                           BranchMergingAwareRepository, 
-                                                                           CacheHandler,
-                                                                           DeploymentAwareRepository
+
+public class GitRepository
+        extends AbstractStandaloneRepository
+        implements MavenPomAccessorCapableRepository,
+        SelectableAuthenticationRepository,
+        CustomVariableProviderRepository,
+        CustomSourceDirectoryAwareRepository,
+        RequirementsAwareRepository,
+        AdvancedConfigurationAwareRepository,
+        BranchDetectionCapableRepository,
+        PushCapableRepository,
+        CachingAwareRepository,
+        BranchMergingAwareRepository,
+        CacheHandler,
+        DeploymentAwareRepository,
+        SharedCredentialDepender
 {
     // ------------------------------------------------------------------------------------------------------- Constants
 
@@ -107,14 +120,15 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     private static final String REPOSITORY_GIT_MAVEN_PATH = "repository.git.maven.path";
     private static final String REPOSITORY_GIT_COMMAND_TIMEOUT = "repository.git.commandTimeout";
     private static final String REPOSITORY_GIT_VERBOSE_LOGS = "repository.git.verbose.logs";
+    private static final String REPOSITORY_GIT_SHAREDCREDENTIALS_ID = "repository.git.sharedCrendentials";
     private static final String TEMPORARY_GIT_PASSWORD = "temporary.git.password";
     private static final String TEMPORARY_GIT_PASSWORD_CHANGE = "temporary.git.password.change";
     private static final String TEMPORARY_GIT_SSH_PASSPHRASE = "temporary.git.ssh.passphrase";
     private static final String TEMPORARY_GIT_SSH_PASSPHRASE_CHANGE = "temporary.git.ssh.passphrase.change";
     private static final String TEMPORARY_GIT_SSH_KEY_FROM_FILE = "temporary.git.ssh.keyfile";
     private static final String TEMPORARY_GIT_SSH_KEY_CHANGE = "temporary.git.ssh.key.change";
+    private static final String SHARED_CREDENTIALS = "SHARED_CREDENTIALS";
 
-    private static final GitAuthenticationType defaultAuthenticationType = GitAuthenticationType.NONE;
     protected static boolean USE_SHALLOW_CLONES = new SystemProperty(false, "atlassian.bamboo.git.useShallowClones", "ATLASSIAN_BAMBOO_GIT_USE_SHALLOW_CLONES").getValue(true);
 
     static final int DEFAULT_COMMAND_TIMEOUT_IN_MINUTES = 180;
@@ -136,6 +150,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     private transient GitCacheHandler gitCacheHandler;
     private transient SshProxyService sshProxyService;
     private transient EncryptionService encryptionService;
+    private transient CredentialsAccessor credentialsAccessor;
     // ---------------------------------------------------------------------------------------------------- Constructors
 
     // ----------------------------------------------------------------------------------------------- Interface Methods
@@ -565,6 +580,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
         buildConfiguration.clearTree(REPOSITORY_GIT_USE_SUBMODULES);
     }
 
+    @Override
     public void prepareConfigObject(@NotNull BuildConfiguration buildConfiguration)
     {
         buildConfiguration.setProperty(REPOSITORY_GIT_COMMAND_TIMEOUT, buildConfiguration.getInt(REPOSITORY_GIT_COMMAND_TIMEOUT, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES));
@@ -601,24 +617,49 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     }
 
     @Override
-    public void populateFromConfig(@NotNull HierarchicalConfiguration config)
+    public void populateFromConfig(@NotNull final HierarchicalConfiguration config)
     {
         super.populateFromConfig(config);
 
+        final String sshPassphrase;
+        final String sshKey;
+        GitAuthenticationType gitAuthenticationType;
+
+        final Long sharedCredentialsId = config.getLong(REPOSITORY_GIT_SHAREDCREDENTIALS_ID, null);
+        if (sharedCredentialsId==null)
+        {
+            sshPassphrase = config.getString(REPOSITORY_GIT_SSH_PASSPHRASE);
+            sshKey = config.getString(REPOSITORY_GIT_SSH_KEY, "");
+            gitAuthenticationType = GitAuthenticationType.valueOf(config.getString(REPOSITORY_GIT_AUTHENTICATION_TYPE));
+        }
+        else
+        {
+            final CredentialsData credentials = credentialsAccessor.getCredentials(sharedCredentialsId);
+
+            Preconditions.checkArgument(credentials != null, "Shared Credentials with id '" + sharedCredentialsId + " are not found");
+
+            final PrivateKeyCredentials sshCredentials = new SshCredentialsImpl(credentials);
+            sshKey = sshCredentials.getKey();
+            sshPassphrase = sshCredentials.getPassphrase();
+            gitAuthenticationType = getAuthenticationTypeForSharedCredentials(config);
+        }
+        
         final VcsBranchImpl branch = new VcsBranchImpl(StringUtils.defaultIfEmpty(config.getString(REPOSITORY_GIT_BRANCH, ""), "master"));
+        
         accessData = GitRepositoryAccessData.builder()
                 .repositoryUrl(StringUtils.trimToEmpty(config.getString(REPOSITORY_GIT_REPOSITORY_URL)))
                 .username(config.getString(REPOSITORY_GIT_USERNAME, ""))
-                .password(config.getString(REPOSITORY_GIT_PASSWORD))
+                .password(config.getString(REPOSITORY_GIT_PASSWORD, null))
                 .branch(branch)
-                .sshKey(config.getString(REPOSITORY_GIT_SSH_KEY, ""))
-                .sshPassphrase(config.getString(REPOSITORY_GIT_SSH_PASSPHRASE))
-                .authenticationType(safeParseAuthenticationType(config.getString(REPOSITORY_GIT_AUTHENTICATION_TYPE)))
+                .sshKey(sshKey)
+                .sshPassphrase(sshPassphrase)
+                .authenticationType(gitAuthenticationType)
                 .useShallowClones(config.getBoolean(REPOSITORY_GIT_USE_SHALLOW_CLONES))
                 .useRemoteAgentCache(config.getBoolean(REPOSITORY_GIT_USE_REMOTE_AGENT_CACHE, false))
                 .useSubmodules(config.getBoolean(REPOSITORY_GIT_USE_SUBMODULES, false))
                 .commandTimeout(config.getInt(REPOSITORY_GIT_COMMAND_TIMEOUT, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES))
                 .verboseLogs(config.getBoolean(REPOSITORY_GIT_VERBOSE_LOGS, false))
+                .sharedCredentialsId(config.getLong(REPOSITORY_GIT_SHAREDCREDENTIALS_ID, null))
                 .build();
 
         pathToPom = config.getString(REPOSITORY_GIT_MAVEN_PATH);
@@ -626,21 +667,39 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
 
     @NotNull
     @Override
+    public Iterable<Long> getSharedCredentialIds()
+    {
+        final Long sharedCredentialsId = accessData.getSharedCredentialsId();
+        return sharedCredentialsId!=null ? ImmutableList.of(sharedCredentialsId) : Collections.<Long>emptyList();
+    }
+
+    @NotNull
+    @Override
     public HierarchicalConfiguration toConfiguration()
     {
-        HierarchicalConfiguration configuration = super.toConfiguration();
+        final HierarchicalConfiguration configuration = super.toConfiguration();
         configuration.setProperty(REPOSITORY_GIT_REPOSITORY_URL, accessData.getRepositoryUrl());
-        configuration.setProperty(REPOSITORY_GIT_USERNAME, accessData.getUsername());
-        configuration.setProperty(REPOSITORY_GIT_PASSWORD, accessData.getPassword());
         configuration.setProperty(REPOSITORY_GIT_BRANCH, accessData.getVcsBranch().getName());
-        configuration.setProperty(REPOSITORY_GIT_SSH_KEY, accessData.getSshKey());
-        configuration.setProperty(REPOSITORY_GIT_SSH_PASSPHRASE, accessData.getSshPassphrase());
-        configuration.setProperty(REPOSITORY_GIT_AUTHENTICATION_TYPE, accessData.getAuthenticationTypeString());
         configuration.setProperty(REPOSITORY_GIT_USE_SHALLOW_CLONES, accessData.isUseShallowClones());
         configuration.setProperty(REPOSITORY_GIT_USE_REMOTE_AGENT_CACHE, accessData.isUseRemoteAgentCache());
         configuration.setProperty(REPOSITORY_GIT_USE_SUBMODULES, accessData.isUseSubmodules());
         configuration.setProperty(REPOSITORY_GIT_COMMAND_TIMEOUT, accessData.getCommandTimeout());
         configuration.setProperty(REPOSITORY_GIT_VERBOSE_LOGS, accessData.isVerboseLogs());
+
+        final Long sharedCredentialsId = accessData.getSharedCredentialsId();
+        if (sharedCredentialsId!=null)
+        {
+            configuration.setProperty(REPOSITORY_GIT_SHAREDCREDENTIALS_ID, sharedCredentialsId);
+            configuration.setProperty(REPOSITORY_GIT_AUTHENTICATION_TYPE, SHARED_CREDENTIALS);
+        }
+        else
+        {
+            configuration.setProperty(REPOSITORY_GIT_SSH_KEY, accessData.getSshKey());
+            configuration.setProperty(REPOSITORY_GIT_SSH_PASSPHRASE, accessData.getSshPassphrase());
+            configuration.setProperty(REPOSITORY_GIT_USERNAME, accessData.getUsername());
+            configuration.setProperty(REPOSITORY_GIT_PASSWORD, accessData.getPassword());
+            configuration.setProperty(REPOSITORY_GIT_AUTHENTICATION_TYPE, accessData.getAuthenticationType().name());
+        }
         return configuration;
     }
 
@@ -651,7 +710,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
         ErrorCollection errorCollection = super.validate(buildConfiguration);
 
         final String repositoryUrl = StringUtils.trim(buildConfiguration.getString(REPOSITORY_GIT_REPOSITORY_URL));
-        final GitAuthenticationType authenticationType = safeParseAuthenticationType(buildConfiguration.getString(REPOSITORY_GIT_AUTHENTICATION_TYPE));
+        final GitAuthenticationType authenticationType = getGitAuthenticationType(buildConfiguration);
 
         if (BambooFieldValidate.findFieldShellInjectionViolation(errorCollection, i18nResolver, REPOSITORY_GIT_REPOSITORY_URL, substituteString(buildConfiguration.getString(REPOSITORY_GIT_REPOSITORY_URL))))
         {
@@ -729,6 +788,21 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
         return errorCollection;
     }
 
+    private GitAuthenticationType getGitAuthenticationType(final BuildConfiguration buildConfiguration)
+    {
+        final String chosenAuthentication = buildConfiguration.getString(REPOSITORY_GIT_AUTHENTICATION_TYPE);
+        if (chosenAuthentication.equals(SHARED_CREDENTIALS))
+        {
+            return getAuthenticationTypeForSharedCredentials(buildConfiguration);
+        }
+        return GitAuthenticationType.valueOf(chosenAuthentication);
+    }
+
+    private GitAuthenticationType getAuthenticationTypeForSharedCredentials(final AbstractConfiguration buildConfiguration)
+    {
+        return GitAuthenticationType.SSH_KEYPAIR;
+    }
+
     @NotNull
     @Override
     public Map<String, String> getCustomVariables()
@@ -757,45 +831,46 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
         return new GitMavenPomAccessor(this, sshProxyService, i18nResolver, getGitCapability()).withPath(pathToPom);
     }
 
+    @Override
     @NotNull
     public List<NameValuePair> getAuthenticationTypes()
     {
-        return Lists.transform(Arrays.asList(GitAuthenticationType.values()), new Function<GitAuthenticationType, NameValuePair>()
+        final List<NameValuePair> authTypes = Lists.newArrayList();
+        for (final GitAuthenticationType gitAuthenticationType : GitAuthenticationType.values())
         {
-            public NameValuePair apply(GitAuthenticationType from)
-            {
-                final String typeName = from.name();
-                return new NameValuePair(typeName, getAuthTypeName(typeName));
+            final String name = gitAuthenticationType.name();
+            authTypes.add(new NameValuePair(name, getAuthTypeName(name)));
+        }
+
+        if (!getSharedCredentials().isEmpty())
+        {
+            authTypes.add(new NameValuePair(SHARED_CREDENTIALS, getAuthTypeName(SHARED_CREDENTIALS)));
+        }
+        return authTypes;
+        
+    }
+    
+    @NotNull
+    public Collection<NameValuePair> getSharedCredentials()
+    {
+        return ImmutableList.copyOf(Iterables.transform(credentialsAccessor.getAllCredentials(), new Function<CredentialsData, NameValuePair>() {
+            public NameValuePair apply(CredentialsData credentials) {
+                return new NameValuePair(Long.toString(credentials.getId()), credentials.getName());
             }
-        });
+        }));
     }
 
+    @Override
     public String getAuthType()
     {
-        return accessData.getAuthenticationTypeString();
+        return accessData.getAuthenticationType().name();
     }
 
     // -------------------------------------------------------------------------------------------------- Public Methods
 
     // -------------------------------------------------------------------------------------------------- Helper Methods
 
-    GitAuthenticationType safeParseAuthenticationType(String typeName)
-    {
-        if (typeName == null)
-        {
-            return defaultAuthenticationType;
-        }
-        try
-        {
-            return GitAuthenticationType.valueOf(typeName);
-        }
-        catch (IllegalArgumentException e)
-        {
-            return defaultAuthenticationType;
-        }
-    }
-
-    String getAuthTypeName(String authType)
+    private String getAuthTypeName(final String authType)
     {
         return i18nResolver.getText("repository.git.authenticationType." + StringUtils.lowerCase(authType));
     }
@@ -808,7 +883,7 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
                 .username(substituteString(accessData.getUsername()))
                 .password(encryptionService.decrypt(accessData.getPassword()))
                 .sshKey(encryptionService.decrypt(accessData.getSshKey()))
-                .sshPassphrase(encryptionService.decrypt(accessData.getSshPassphrase()));
+                .sshPassphrase(encryptionService.decrypt(accessData.getSshPassphrase()));             
     }
 
     GitRepositoryAccessData getSubstitutedAccessData()
@@ -903,7 +978,12 @@ public class GitRepository extends AbstractStandaloneRepository implements Maven
     {
         this.encryptionService = encryptionService;
     }
-
+    
+    public void setCredentialsAccessor(final CredentialsAccessor credentialsAccessor)
+    {
+        this.credentialsAccessor = credentialsAccessor;
+    }
+    
     public String getOptionDescription()
     {
         String capabilitiesLink = ServletActionContext.getRequest().getContextPath() +

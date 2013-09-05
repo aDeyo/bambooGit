@@ -49,5 +49,16 @@
             [@ww.password labelKey='repository.git.ssh.passphrase' name='temporary.git.ssh.passphrase' /]
         [/#if]
     [/@ui.bambooSection]
+    
+    [@ui.bambooSection dependsOn='repository.git.authenticationType' showOn='SHARED_CREDENTIALS']
+        [@ww.select
+	        labelKey='repository.git.sharedCrendentials'
+	        name='repository.git.sharedCrendentials'
+	        toggle=true
+	        list=repository.sharedCredentials
+	        listKey='name'
+	        listValue='label']
+	    [/@ww.select]
+    [/@ui.bambooSection]
 
 [/@ui.bambooSection]

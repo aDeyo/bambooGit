@@ -4,6 +4,7 @@ import com.atlassian.bamboo.plan.branch.VcsBranch;
 import com.atlassian.bamboo.plan.branch.VcsBranchImpl;
 import com.atlassian.bamboo.ssh.ProxyRegistrationInfo;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 
@@ -21,6 +22,7 @@ public final class GitRepositoryAccessData implements Serializable
     private boolean useSubmodules;
     private int commandTimeout;
     private boolean verboseLogs;
+    private Long sharedCredentialsId;
 
     private transient ProxyRegistrationInfo proxyRegistrationInfo;
 
@@ -38,8 +40,9 @@ public final class GitRepositoryAccessData implements Serializable
         private boolean useSubmodules;
         private int commandTimeout;
         private boolean verboseLogs;
+        private Long sharedCredentialsId;
 
-        public Builder clone(GitRepositoryAccessData gitRepositoryAccessData)
+        public Builder clone(final GitRepositoryAccessData gitRepositoryAccessData)
         {
             this.repositoryUrl = gitRepositoryAccessData.repositoryUrl;
             this.branch = gitRepositoryAccessData.branch;
@@ -53,6 +56,7 @@ public final class GitRepositoryAccessData implements Serializable
             this.useRemoteAgentCache = gitRepositoryAccessData.useRemoteAgentCache;
             this.commandTimeout = gitRepositoryAccessData.commandTimeout;
             this.verboseLogs = gitRepositoryAccessData.verboseLogs;
+            this.sharedCredentialsId = gitRepositoryAccessData.sharedCredentialsId;
             return this;
         }
 
@@ -134,6 +138,12 @@ public final class GitRepositoryAccessData implements Serializable
             this.verboseLogs = verboseLogs;
             return this;
         }
+        public Builder sharedCredentialsId(Long sharedCredentialsId)
+        {
+            this.sharedCredentialsId = sharedCredentialsId;
+            return this;
+        }
+    
 
         public GitRepositoryAccessData build()
         {
@@ -150,11 +160,13 @@ public final class GitRepositoryAccessData implements Serializable
             data.useSubmodules = this.useSubmodules;
             data.commandTimeout = this.commandTimeout;
             data.verboseLogs = this.verboseLogs;
+            data.sharedCredentialsId = this.sharedCredentialsId;
             return data;
         }
+      
     }
 
-   public static Builder builder()
+    public static Builder builder()
     {
         return new Builder();
     }
@@ -215,11 +227,6 @@ public final class GitRepositoryAccessData implements Serializable
         return authenticationType;
     }
 
-    public String getAuthenticationTypeString()
-    {
-        return  authenticationType != null ? authenticationType.name() : null;
-    }
-
     public boolean isUseShallowClones()
     {
         return useShallowClones;
@@ -254,4 +261,16 @@ public final class GitRepositoryAccessData implements Serializable
     {
         this.proxyRegistrationInfo = proxyRegistrationInfo;
     }
+
+    @Nullable
+    public Long getSharedCredentialsId()
+    {
+        return sharedCredentialsId;
+    }
+
+    public void setSharedCredentialsId(Long sharedCredentialsId)
+    {
+        this.sharedCredentialsId = sharedCredentialsId;
+    }
+    
 }
