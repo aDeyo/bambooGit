@@ -7,6 +7,7 @@ import com.atlassian.bamboo.build.fileserver.BuildDirectoryManager;
 import com.atlassian.bamboo.build.logger.NullBuildLogger;
 import com.atlassian.bamboo.chains.Chain;
 import com.atlassian.bamboo.core.TransportProtocol;
+import com.atlassian.bamboo.credentials.CredentialsAccessor;
 import com.atlassian.bamboo.plan.PlanKey;
 import com.atlassian.bamboo.plan.PlanKeys;
 import com.atlassian.bamboo.plan.branch.BranchIntegrationHelper;
@@ -273,7 +274,7 @@ public class GitAbstractTest
 
         Project project = Mockito.mock(Project.class);
         Mockito.when(chain.getProject()).thenReturn(project);
-        return new BuildContextBuilderImpl(Mockito.mock(BranchIntegrationService.class), Mockito.mock(VariableDefinitionManager.class))
+        return new BuildContextBuilderImpl(Mockito.mock(BranchIntegrationService.class), Mockito.mock(VariableDefinitionManager.class), Mockito.mock(CredentialsAccessor.class), null)
                 .plan(chain)
                 .buildNumber(1)
                 .variableContext(Mockito.mock(VariableContext.class))
