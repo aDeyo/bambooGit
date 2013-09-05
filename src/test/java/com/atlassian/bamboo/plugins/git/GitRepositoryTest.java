@@ -2,6 +2,7 @@ package com.atlassian.bamboo.plugins.git;
 
 import com.atlassian.bamboo.build.fileserver.BuildDirectoryManager;
 import com.atlassian.bamboo.commit.CommitContext;
+import com.atlassian.bamboo.credentials.CredentialsAccessor;
 import com.atlassian.bamboo.plan.branch.BranchIntegrationService;
 import com.atlassian.bamboo.repository.InvalidRepositoryException;
 import com.atlassian.bamboo.repository.NameValuePair;
@@ -9,6 +10,7 @@ import com.atlassian.bamboo.repository.RepositoryException;
 import com.atlassian.bamboo.v2.build.BuildRepositoryChanges;
 import com.atlassian.bamboo.v2.build.agent.remote.RemoteBuildDirectoryManager;
 import com.atlassian.testtools.ZipResourceDirectory;
+import edu.emory.mathcs.backport.java.util.Collections;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.errors.TransportException;
 import org.testng.Assert;
@@ -20,6 +22,8 @@ import java.io.File;
 import java.util.List;
 
 import static com.atlassian.bamboo.testutils.spring.SpringTestHelper.mockSpringComponent;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -138,8 +142,11 @@ public class GitRepositoryTest extends GitAbstractTest
     @Test
     public void testAuthenticationTypesHaveValidLabels() throws Exception
     {
-        GitRepository gitRepository = createGitRepository();
-        for (NameValuePair nameValuePair : gitRepository.getAuthenticationTypes())
+        final GitRepository gitRepository = createGitRepository();
+        final CredentialsAccessor credentialsAccessor = mock(CredentialsAccessor.class);
+        when(credentialsAccessor.getAllCredentials()).thenReturn(Collections.emptyList());
+        gitRepository.setCredentialsAccessor(credentialsAccessor);
+        for (final NameValuePair nameValuePair : gitRepository.getAuthenticationTypes())
         {
             Assert.assertNotNull(nameValuePair.getName());
             Assert.assertNotNull(nameValuePair.getLabel());

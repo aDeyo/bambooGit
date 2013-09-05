@@ -40,10 +40,15 @@ public class GitRepositoryValidationTest
     {
         BuildConfiguration conf = new BuildConfiguration();
         conf.setProperty("repository.git.maven.path", mavenPath);
-
+        addMandatoryConfigurationSettings(conf);
         GitRepository repo = createRepository();
         ErrorCollection errorCollection = repo.validate(conf);
         Assert.assertNotNull(errorCollection.getErrors().get("repository.git.maven.path"));
+    }
+
+    private void addMandatoryConfigurationSettings(final BuildConfiguration conf)
+    {
+        conf.setProperty(GitRepository.REPOSITORY_GIT_AUTHENTICATION_TYPE, GitAuthenticationType.NONE.toString());
     }
 
     @DataProvider(parallel = true)

@@ -278,7 +278,9 @@ public class GitAbstractTest
 
         Project project = Mockito.mock(Project.class);
         Mockito.when(chain.getProject()).thenReturn(project);
-        return new BuildContextBuilderImpl(Mockito.mock(BranchIntegrationService.class), Mockito.mock(VariableDefinitionManager.class), Mockito.mock(CredentialsAccessor.class), null)
+        return new BuildContextBuilderImpl(Mockito.mock(BranchIntegrationService.class),
+                Mockito.mock(VariableDefinitionManager.class),
+                Mockito.mock(CredentialsAccessor.class), null)
                 .plan(chain)
                 .buildNumber(1)
                 .variableContext(Mockito.mock(VariableContext.class))

@@ -51,6 +51,7 @@ import com.atlassian.bamboo.v2.build.repository.RequirementsAwareRepository;
 import com.atlassian.bamboo.ww2.actions.build.admin.create.BuildConfiguration;
 import com.atlassian.sal.api.message.I18nResolver;
 import com.atlassian.util.concurrent.Supplier;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -106,7 +107,8 @@ public class GitRepository
     private static final String REPOSITORY_GIT_NAME = "repository.git.name";
     private static final String REPOSITORY_URL = "repositoryUrl";
     private static final String REPOSITORY_GIT_REPOSITORY_URL = "repository.git." + REPOSITORY_URL;
-    private static final String REPOSITORY_GIT_AUTHENTICATION_TYPE = "repository.git.authenticationType";
+    @VisibleForTesting
+    static final String REPOSITORY_GIT_AUTHENTICATION_TYPE = "repository.git.authenticationType";
     private static final String REPOSITORY_USERNAME = "username";
     private static final String REPOSITORY_GIT_USERNAME = "repository.git." + REPOSITORY_USERNAME;
     private static final String REPOSITORY_GIT_PASSWORD = "repository.git.password";
@@ -854,7 +856,8 @@ public class GitRepository
     public Collection<NameValuePair> getSharedCredentials()
     {
         return ImmutableList.copyOf(Iterables.transform(credentialsAccessor.getAllCredentials(), new Function<CredentialsData, NameValuePair>() {
-            public NameValuePair apply(CredentialsData credentials) {
+            public NameValuePair apply(CredentialsData credentials)
+            {
                 return new NameValuePair(Long.toString(credentials.getId()), credentials.getName());
             }
         }));
