@@ -55,6 +55,7 @@ public class VariableSubstitutionTest extends GitAbstractTest
 
         BuildConfiguration buildConfiguration = new BuildConfiguration();
         buildConfiguration.setProperty("repository.git.repositoryUrl", plainUrl);
+        GitConfigurationHelpers.addMandatoryConfigurationSettings(buildConfiguration);
         ErrorCollection plainErrorCollection = repository.validate(buildConfiguration);
 
         buildConfiguration.setProperty("repository.git.repositoryUrl", variableUrl);
