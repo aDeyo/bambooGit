@@ -68,6 +68,7 @@ public class GitAbstractTest
 
     protected static final String COMITTER_NAME = "Committer";
     protected static final String COMITTER_EMAIL = "committer@example.com";
+    private static final String REPOSITORY_GIT_AUTHENTICATION_TYPE = "repository.git.authenticationType";
     protected static final EncryptionService encryptionService = new EncryptionServiceImpl();
 
     public static void setRepositoryProperties(GitRepository gitRepository, File repositorySourceDir, String branch) throws Exception
@@ -90,10 +91,11 @@ public class GitAbstractTest
         Map<String, String> params = Maps.newHashMap(paramMap);
 
         params.put("repository.git.branch", branch);
+        params.put(REPOSITORY_GIT_AUTHENTICATION_TYPE, GitAuthenticationType.NONE.name());
         if (sshKey != null)
         {
             params.put("repository.git.ssh.key", encryptionService.encrypt(sshKey));
-            params.put("repository.git.authenticationType", GitAuthenticationType.SSH_KEYPAIR.name());
+            params.put(REPOSITORY_GIT_AUTHENTICATION_TYPE, GitAuthenticationType.SSH_KEYPAIR.name());
         }
         if (sshPassphrase != null)
         {
@@ -114,8 +116,10 @@ public class GitAbstractTest
 
     public static void setRepositoryProperties(GitRepository gitRepository, String repositoryUrl, Map<String, ?> paramMap) throws Exception
     {
+
         BuildConfiguration buildConfiguration = new BuildConfiguration();
         buildConfiguration.setProperty("repository.git.repositoryUrl", repositoryUrl);
+        buildConfiguration.setProperty(REPOSITORY_GIT_AUTHENTICATION_TYPE, GitAuthenticationType.NONE.name());
 
         for (Map.Entry<String, ?> entry : paramMap.entrySet())
         {
