@@ -69,46 +69,18 @@ public class ShallowClonesTest extends GitAbstractTest
                 {
                         new String[][]{
                                 new String[]{"github.com/pstefaniak/2.git", "4c9d", "shallow-clones/2-contents.zip"},
-                                new String[]{"github.com/pstefaniak/3.git", "1455", "shallow-clones/1-contents.zip"},
                                 new String[]{"github.com/pstefaniak/3.git", "0a77", "shallow-clones/3-contents.zip"},
                         },
                 },
                 {
                         new String[][]{
-                                new String[]{"github.com/pstefaniak/1.git", "1455", "shallow-clones/1-contents.zip"},
-                                new String[]{"github.com/pstefaniak/3.git", "4c9d", "shallow-clones/2-contents.zip"},
-                        },
-                },
-                {
-                        new String[][]{
-                                new String[]{"github.com/pstefaniak/3.git", "4c9d", "shallow-clones/2-contents.zip"},
-                                new String[]{"github.com/pstefaniak/5.git", "4c9d", "shallow-clones/2-contents.zip"},
-                        },
-                },
-                {
-                        new String[][]{
-                                new String[]{"github.com/pstefaniak/2.git", "1455", "shallow-clones/1-contents.zip"},
-                                new String[]{"github.com/pstefaniak/3.git", "4c9d", "shallow-clones/2-contents.zip"},
-                                new String[]{"github.com/pstefaniak/3.git", "0a77", "shallow-clones/3-contents.zip"},
+                                new String[]{"github.com/pstefaniak/1.git", "1455", "shallow-clones/1-contents.zip"}
                         },
                 },
                 {
                         new String[][]{
                                 new String[]{"github.com/pstefaniak/2.git", "4c9d", "shallow-clones/2-contents.zip"},
-                                new String[]{"github.com/pstefaniak/2.git", "1455", "shallow-clones/1-contents.zip"},
-                        },
-                },
-                {
-                        new String[][]{
-                                new String[]{"github.com/pstefaniak/2.git", "4c9d", "shallow-clones/2-contents.zip"},
-                                new String[]{"github.com/pstefaniak/2.git", "1455", "shallow-clones/1-contents.zip"},
-                        },
-                },
-                {
-                        new String[][]{
-                                new String[]{"github.com/pstefaniak/2.git", "4c9d", "shallow-clones/2-contents.zip"},
-                                new String[]{"github.com/pstefaniak/3.git", "4c9d", "shallow-clones/2-contents.zip"},
-                                new String[]{"github.com/pstefaniak/3.git", "1455", "shallow-clones/1-contents.zip"},
+                                new String[]{"github.com/pstefaniak/3.git", "4c9d", "shallow-clones/2-contents.zip"}
                         },
                 },
         };
@@ -129,13 +101,17 @@ public class ShallowClonesTest extends GitAbstractTest
         {
             File tmp = createTempDirectory();
 
-            String revision = null;
-            for (String[] currentFetch : successiveFetches)
+            String checkoutTip = null;
+            for (final String[] currentFetch : successiveFetches)
             {
-                GitOperationHelper helper = createJGitOperationHelper(createAccessData(protocol + currentFetch[0]));
-                helper.fetch(tmp, currentFetch[1], true);
-                revision = helper.checkout(null, tmp, currentFetch[1], revision);
-                verifyContents(tmp, currentFetch[2]);
+                final String fetchRepo = currentFetch[0];
+                final String fetchHead = currentFetch[1];
+                final String verifyRepo = currentFetch[2];
+
+                final GitOperationHelper helper = createJGitOperationHelper(createAccessData(protocol + fetchRepo));
+                helper.fetch(tmp, fetchHead, true);
+                checkoutTip = helper.checkout(null, tmp, fetchHead, checkoutTip);
+                verifyContents(tmp, verifyRepo);
             }
         }
     }
@@ -204,9 +180,9 @@ public class ShallowClonesTest extends GitAbstractTest
     Object[][] testUseShallowClonesCheckboxData() throws Exception
     {
         return new Object[][]{
-                {"git://github.com/pstefaniak/7.git",         "728b4f095a115a91be26",  true,    2},
+                {"git://github.com/pstefaniak/7.git",         "728b4f095a115a91be26",  true,    1},
                 {"git://github.com/pstefaniak/7.git",         "728b4f095a115a91be26", false,    7},
-                {"git://github.com/pstefaniak/72parents.git", "f9a3b37fcbf5298c1bfa",  true,   73},
+                {"git://github.com/pstefaniak/72parents.git", "f9a3b37fcbf5298c1bfa",  true,   1},
                 {"git://github.com/pstefaniak/72parents.git", "f9a3b37fcbf5298c1bfa", false,   74},
         };
     }
@@ -234,7 +210,7 @@ public class ShallowClonesTest extends GitAbstractTest
         GitOperationHelper helper = createJGitOperationHelper(createAccessData("git://github.com/pstefaniak/72parents.git"));
 
         helper.fetch(tmp, "f9a3b37fcbf5298c1bfa", true);
-        assertEquals(FileUtils.readLines(new File(tmp, ".git/shallow")).size(), 72);
+        assertEquals(FileUtils.readLines(new File(tmp, ".git/shallow")).size(), 1);
         helper.checkout(null, tmp, "f9a3b37fcbf5298c1bfa", null);
         verifyContents(tmp, "shallow-clones/72parents-contents.zip");
     }
@@ -246,11 +222,11 @@ public class ShallowClonesTest extends GitAbstractTest
         GitOperationHelper helper3 = createJGitOperationHelper(createAccessData("git://github.com/pstefaniak/3.git"));
 
         helper3.fetch(tmp, "HEAD", true);
-        assertEquals(FileUtils.readFileToString(new File(tmp, ".git/shallow")), "4c9d0c7e6167407deff1d31af5884911202dd3db\n");
+        assertEquals(FileUtils.readFileToString(new File(tmp, ".git/shallow")), "0a77ee667ee310b86022f0173b59174375ed4b5d\n");
 
         GitOperationHelper helper7 = createJGitOperationHelper(createAccessData("git://github.com/pstefaniak/7.git"));
         helper7.fetch(tmp, "HEAD", false);
-        assertEquals(FileUtils.readFileToString(new File(tmp, ".git/shallow")), "4c9d0c7e6167407deff1d31af5884911202dd3db\n");
+        assertEquals(FileUtils.readFileToString(new File(tmp, ".git/shallow")), "0a77ee667ee310b86022f0173b59174375ed4b5d\n");
         helper7.checkout(null, tmp, "1070f438270b8cf1ca36", null);
         verifyContents(tmp, "shallow-clones/5-contents.zip");
 
@@ -263,7 +239,7 @@ public class ShallowClonesTest extends GitAbstractTest
         }
 
         Assert.assertEquals(commits.get(0), "1070f438270b8cf1ca36a026e70302208bf40349");
-        Assert.assertEquals(commits.size(), 4);
+        Assert.assertEquals(commits.size(), 3);
 
         Assert.assertTrue(repository.getObjectDatabase().has(ObjectId.fromString("1070f438270b8cf1ca36a026e70302208bf40349")));
         Assert.assertFalse(repository.getObjectDatabase().has(ObjectId.fromString("145570eea6bf9f87a7bcf0cab2c995bf084b0698")));

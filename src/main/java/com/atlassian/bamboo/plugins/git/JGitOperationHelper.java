@@ -17,6 +17,7 @@ import com.atlassian.bamboo.util.TextProviderUtils;
 import com.atlassian.bamboo.v2.build.BuildRepositoryChanges;
 import com.atlassian.bamboo.v2.build.BuildRepositoryChangesImpl;
 import com.atlassian.sal.api.message.I18nResolver;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
@@ -119,7 +120,9 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
             dirCache = localRepository.lockDirCache();
 
             revWalk = new RevWalk(localRepository);
-            final RevCommit targetCommit = revWalk.parseCommit(localRepository.resolve(targetRevision));
+            final ObjectId resolvedTargetRevision = localRepository.resolve(targetRevision);
+            Preconditions.checkNotNull(resolvedTargetRevision, "Unable to find revision " + targetRevision + " in repository");
+            final RevCommit targetCommit = revWalk.parseCommit(resolvedTargetRevision);
             final RevCommit previousCommit = previousRevision == null ? null : revWalk.parseCommit(localRepository.resolve(previousRevision));
 
             DirCacheCheckout dirCacheCheckout = new DirCacheCheckout(localRepository,
