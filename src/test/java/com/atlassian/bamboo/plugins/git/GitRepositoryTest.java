@@ -48,6 +48,19 @@ public class GitRepositoryTest extends GitAbstractTest
         gitRepository.retrieveSourceCode(mockBuildContext(), changes.getVcsRevisionKey(), getCheckoutDir(gitRepository));
     }
 
+    //This test is broken on purpose to demonstrate BDEV-3517
+    @Test
+    public void testCustomBuildFromAnotherBranch() throws Exception
+    {
+        final File testRepository = createTempDirectory();
+        ZipResourceDirectory.copyZipResourceToDirectory("basic-repository.zip", testRepository);
+        final String commitOnlyOnMyBranch = "cb05712da0a59040b8eb867f48b84fad292974bf";
+        final GitRepository gitRepository = createGitRepository();
+        setRepositoryProperties(gitRepository, testRepository, "master");
+
+        gitRepository.retrieveSourceCode(mockBuildContext(), commitOnlyOnMyBranch, getCheckoutDir(gitRepository));
+    }
+
     @Test
     public void testNetworkErrorsDontRemoveCache() throws Exception
     {

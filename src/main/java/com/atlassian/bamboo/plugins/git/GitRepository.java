@@ -324,8 +324,8 @@ public class GitRepository
             final BuildLogger buildLogger = buildLoggerManager.getLogger(buildContext.getPlanResultKey());
             final GitOperationHelper helper = GitOperationHelperFactory.createGitOperationHelper(this, substitutedAccessData, sshProxyService, buildLogger, i18nResolver);
 
-            final String targetRevision = vcsRevisionKey != null ? vcsRevisionKey : helper.obtainLatestRevision();
-            final String fetchRevision = substitutedAccessData.getVcsBranch().getName();
+            final String revisionToCheckout = vcsRevisionKey != null ? vcsRevisionKey : helper.obtainLatestRevision();
+            final String refToFetch = substitutedAccessData.getVcsBranch().getName();
             final String previousRevision = helper.getRevisionIfExists(sourceDirectory, Constants.HEAD);
 
             if (isOnLocalAgent() || substitutedAccessData.isUseRemoteAgentCache())
@@ -337,26 +337,26 @@ public class GitRepository
                     {
                         try
                         {
-                            helper.fetch(cacheDirectory, fetchRevision, false);
-                            helper.checkRevisionExistsInCacheRepository(cacheDirectory, targetRevision);
+                            helper.fetch(cacheDirectory, refToFetch, false);
+                            helper.checkRevisionExistsInCacheRepository(cacheDirectory, revisionToCheckout);
                         }
                         catch (Exception e)
                         {
                             rethrowOrRemoveDirectory(e, buildLogger, cacheDirectory, "repository.git.messages.rsRecover.failedToFetchCache");
                             buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.cleanedCacheDirectory", cacheDirectory));
-                            helper.fetch(cacheDirectory, fetchRevision, false);
+                            helper.fetch(cacheDirectory, refToFetch, false);
                             buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.fetchingCacheCompleted", cacheDirectory));
                         }
 
                         try
                         {
-                            return helper.checkout(cacheDirectory, sourceDirectory, targetRevision, previousRevision);
+                            return helper.checkout(cacheDirectory, sourceDirectory, revisionToCheckout, previousRevision);
                         }
                         catch (Exception e)
                         {
                             rethrowOrRemoveDirectory(e, buildLogger, sourceDirectory, "repository.git.messages.rsRecover.failedToCheckout");
                             buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.cleanedSourceDirectory", sourceDirectory));
-                            String returnRevision = helper.checkout(cacheDirectory, sourceDirectory, targetRevision, null);
+                            String returnRevision = helper.checkout(cacheDirectory, sourceDirectory, revisionToCheckout, null);
                             buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.checkoutCompleted"));
                             return returnRevision;
                         }
@@ -368,16 +368,16 @@ public class GitRepository
             {
                 try
                 {
-                    helper.fetch(sourceDirectory, fetchRevision, doShallowFetch);
-                    return helper.checkout(null, sourceDirectory, targetRevision, previousRevision);
+                    helper.fetch(sourceDirectory, refToFetch, doShallowFetch);
+                    return helper.checkout(null, sourceDirectory, revisionToCheckout, previousRevision);
                 }
                 catch (Exception e)
                 {
                     rethrowOrRemoveDirectory(e, buildLogger, sourceDirectory, "repository.git.messages.rsRecover.failedToCheckout");
                     buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.cleanedSourceDirectory", sourceDirectory));
-                    helper.fetch(sourceDirectory, fetchRevision, false);
+                    helper.fetch(sourceDirectory, refToFetch, false);
                     buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.fetchingCompleted", sourceDirectory));
-                    String returnRevision = helper.checkout(null, sourceDirectory, targetRevision, null);
+                    String returnRevision = helper.checkout(null, sourceDirectory, revisionToCheckout, null);
                     buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.rsRecover.checkoutCompleted"));
                     return returnRevision;
                 }
