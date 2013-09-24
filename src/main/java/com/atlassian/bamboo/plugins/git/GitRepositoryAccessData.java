@@ -138,7 +138,7 @@ public final class GitRepositoryAccessData implements Serializable
             this.verboseLogs = verboseLogs;
             return this;
         }
-        public Builder sharedCredentialsId(Long sharedCredentialsId)
+        public Builder sharedCredentialsId(@Nullable final Long sharedCredentialsId)
         {
             this.sharedCredentialsId = sharedCredentialsId;
             return this;

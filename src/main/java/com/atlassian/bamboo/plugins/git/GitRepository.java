@@ -625,17 +625,20 @@ public class GitRepository
 
         final String sshPassphrase;
         final String sshKey;
-        GitAuthenticationType gitAuthenticationType;
+        final GitAuthenticationType gitAuthenticationType;
+        final Long sharedCredentialsId;
 
-        final Long sharedCredentialsId = config.getLong(REPOSITORY_GIT_SHAREDCREDENTIALS_ID, null);
-        if (sharedCredentialsId==null)
+        final String chosenAuthentication = config.getString(REPOSITORY_GIT_AUTHENTICATION_TYPE);
+        if (!chosenAuthentication.equals(SHARED_CREDENTIALS))
         {
+            sharedCredentialsId = null;
             sshPassphrase = config.getString(REPOSITORY_GIT_SSH_PASSPHRASE);
             sshKey = config.getString(REPOSITORY_GIT_SSH_KEY, "");
             gitAuthenticationType = GitAuthenticationType.valueOf(config.getString(REPOSITORY_GIT_AUTHENTICATION_TYPE));
         }
         else
         {
+            sharedCredentialsId = config.getLong(REPOSITORY_GIT_SHAREDCREDENTIALS_ID, null);
             final CredentialsData credentials = credentialsAccessor.getCredentials(sharedCredentialsId);
 
             Preconditions.checkArgument(credentials != null, "Shared Credentials with id '" + sharedCredentialsId + " are not found");
@@ -661,7 +664,7 @@ public class GitRepository
                 .useSubmodules(config.getBoolean(REPOSITORY_GIT_USE_SUBMODULES, false))
                 .commandTimeout(config.getInt(REPOSITORY_GIT_COMMAND_TIMEOUT, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES))
                 .verboseLogs(config.getBoolean(REPOSITORY_GIT_VERBOSE_LOGS, false))
-                .sharedCredentialsId(config.getLong(REPOSITORY_GIT_SHAREDCREDENTIALS_ID, null))
+                .sharedCredentialsId(sharedCredentialsId)
                 .build();
 
         pathToPom = config.getString(REPOSITORY_GIT_MAVEN_PATH);
