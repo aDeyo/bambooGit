@@ -177,7 +177,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
                     final Matcher matcher = GIT_VERSION_PATTERN.matcher(output);
                     if (!matcher.find())
                     {
-                        throw new GitCommandException("Unable to parse git commnand output: " + exitCode, null, output, "", null);
+                        throw new GitCommandException("Unable to parse git command output: " + exitCode, null, output, "", null);
                     }
                     return matcher.group();
                 }
