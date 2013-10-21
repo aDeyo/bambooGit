@@ -1,6 +1,6 @@
 package com.atlassian.bamboo.plugins.git;
 
-import com.google.inject.internal.ImmutableMap;
+import com.google.common.collect.ImmutableMap;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
