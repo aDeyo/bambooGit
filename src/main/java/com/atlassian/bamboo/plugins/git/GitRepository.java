@@ -123,6 +123,7 @@ public class GitRepository
     private static final String REPOSITORY_GIT_COMMAND_TIMEOUT = "repository.git.commandTimeout";
     private static final String REPOSITORY_GIT_VERBOSE_LOGS = "repository.git.verbose.logs";
     private static final String REPOSITORY_GIT_SHAREDCREDENTIALS_ID = "repository.git.sharedCrendentials";
+    private static final String REPOSITORY_GIT_SHAREDCREDENTIALS_DELETED = "repository.git.sharedCredentials.deleted";
     private static final String TEMPORARY_GIT_PASSWORD = "temporary.git.password";
     private static final String TEMPORARY_GIT_PASSWORD_CHANGE = "temporary.git.password.change";
     private static final String TEMPORARY_GIT_SSH_PASSPHRASE = "temporary.git.ssh.passphrase";
@@ -145,7 +146,7 @@ public class GitRepository
     // Maven 2 import
     private transient String pathToPom;
 
-
+    private boolean sharedCredentialsDeleted;
     // ---------------------------------------------------------------------------------------------------- Dependencies
     private transient CapabilityContext capabilityContext;
     private transient I18nResolver i18nResolver;
@@ -641,12 +642,20 @@ public class GitRepository
             sharedCredentialsId = config.getLong(REPOSITORY_GIT_SHAREDCREDENTIALS_ID, null);
             final CredentialsData credentials = credentialsAccessor.getCredentials(sharedCredentialsId);
 
-            Preconditions.checkArgument(credentials != null, "Shared Credentials with id '" + sharedCredentialsId + " are not found");
-
-            final PrivateKeyCredentials sshCredentials = new SshCredentialsImpl(credentials);
-            sshKey = sshCredentials.getKey();
-            sshPassphrase = sshCredentials.getPassphrase();
-            gitAuthenticationType = getAuthenticationTypeForSharedCredentials(config);
+            if (credentials != null)
+            {
+                final PrivateKeyCredentials sshCredentials = new SshCredentialsImpl(credentials);
+                sshKey = sshCredentials.getKey();
+                sshPassphrase = sshCredentials.getPassphrase();
+                gitAuthenticationType = getAuthenticationTypeForSharedCredentials(config);
+            }
+            else
+            {
+                sharedCredentialsDeleted = true;
+                sshKey = "";
+                sshPassphrase = "";
+                gitAuthenticationType = null;
+            }
         }
         
         final VcsBranchImpl branch = new VcsBranchImpl(StringUtils.defaultIfEmpty(config.getString(REPOSITORY_GIT_BRANCH, ""), "master"));
@@ -694,6 +703,10 @@ public class GitRepository
         final Long sharedCredentialsId = accessData.getSharedCredentialsId();
         if (sharedCredentialsId!=null)
         {
+            if (sharedCredentialsDeleted)
+            {
+                configuration.setProperty(REPOSITORY_GIT_SHAREDCREDENTIALS_DELETED, true);
+            }
             configuration.setProperty(REPOSITORY_GIT_SHAREDCREDENTIALS_ID, sharedCredentialsId);
             configuration.setProperty(REPOSITORY_GIT_AUTHENTICATION_TYPE, SHARED_CREDENTIALS);
         }
@@ -1080,5 +1093,10 @@ public class GitRepository
     public void deleteUnusedCaches(@NotNull final ValidationAware validationAware)
     {
         gitCacheHandler.deleteUnusedCaches(validationAware);
+    }
+
+    public boolean isSharedCredentialsDeleted()
+    {
+        return sharedCredentialsDeleted;
     }
 }
