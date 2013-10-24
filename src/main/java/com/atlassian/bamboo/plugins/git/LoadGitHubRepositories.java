@@ -97,13 +97,13 @@ public class LoadGitHubRepositories extends PlanActionSupport implements PlanEdi
             else
             {
                 addActionError(getText("repository.github.ajaxError") + e.toString());
-                log.error("Could not load bitbucket repositories for " + username + ".", e);
+                log.error("Could not load github repositories for " + username + ".", e);
             }
         }
         catch (Exception e)
         {
             addActionError(getText("repository.github.ajaxError") + e.toString());
-            log.error("Could not load bitbucket repositories for " + username + ".", e);
+            log.error("Could not load github repositories for " + username + ".", e);
         }
 
         JSONObject jsonObject = super.getJsonObject();
@@ -154,7 +154,7 @@ public class LoadGitHubRepositories extends PlanActionSupport implements PlanEdi
 
         if (accessibleRepositoriesAndBranches.isEmpty())
         {
-            addFieldError("username", getText("repository.bitbucket.error.noRepositories", Arrays.asList(username)));
+            addFieldError("username", getText("repository.github.error.noRepositories", Arrays.asList(username)));
         }
         return accessibleRepositoriesAndBranches;
     }
