@@ -8,8 +8,7 @@
     [#if buildConfiguration.getBoolean('repository.git.sharedCredentials.deleted')]
         [#if fn.hasRestrictedAdminPermission()]
             [@ui.messageBox type="error" titleKey="repository.git.sharedCredentials.deleted.title"]
-                [@ww.text name="repository.git.sharedCredentials.deleted.edit"]
-                [/@ww.text]
+                [@ww.text name="repository.git.sharedCredentials.deleted.edit"/]
                 <br/>
                 [@ww.text name="repository.git.sharedCredentials.deleted.update" ]
                     [@ww.param][@ww.url action="configureSharedCredentials" namespace="/admin" /][/@ww.param]
