@@ -9,7 +9,7 @@
         [#if fn.hasRestrictedAdminPermission()]
             [#assign title]
                 [@ww.text name="repository.git.sharedCredentials.deleted.admin"]
-                    [@ww.param][@ww.url action="configureSharedCredentials" namespace="/admin/credentials" /][/@ww.param]
+                    [@ww.param][@ww.url action="configureGlobalRepositories" namespace="/admin" repositoryId=repositoryId /][/@ww.param]
                 [/@ww.text]
             [/#assign]
             [@ui.messageBox type="error" title=title/]
