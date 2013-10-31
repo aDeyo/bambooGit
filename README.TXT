@@ -1,4 +1,4 @@
-__How to build the Bamboo Git Plugin__
+__How to build the Bamboo Git Plugin__ 
 
 Impatient way:
 1. `mvn package' (Apache Maven 2.2.1 was used to develop this plugin)
