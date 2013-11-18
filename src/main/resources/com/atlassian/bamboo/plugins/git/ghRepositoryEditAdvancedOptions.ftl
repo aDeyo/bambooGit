@@ -2,3 +2,4 @@
 [@ww.checkbox labelKey='repository.github.useSubmodules' name='repository.github.useSubmodules' /]
 [@ww.textfield labelKey='repository.github.commandTimeout' name='repository.github.commandTimeout' /]
 [@ww.checkbox labelKey='repository.github.verbose.logs' name='repository.github.verbose.logs' /]
+[@ww.checkbox labelKey='repository.github.fetch.whole.repository' name='repository.github.fetch.whole.repository' /]

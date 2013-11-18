@@ -53,7 +53,6 @@ import com.atlassian.sal.api.message.I18nResolver;
 import com.atlassian.util.concurrent.Supplier;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -122,6 +121,7 @@ public class GitRepository
     private static final String REPOSITORY_GIT_MAVEN_PATH = "repository.git.maven.path";
     private static final String REPOSITORY_GIT_COMMAND_TIMEOUT = "repository.git.commandTimeout";
     private static final String REPOSITORY_GIT_VERBOSE_LOGS = "repository.git.verbose.logs";
+    private static final String REPOSITORY_GIT_FETCH_WHOLE_REPOSITORY = "repository.git.fetch.whole.repository";
     private static final String REPOSITORY_GIT_SHAREDCREDENTIALS_ID = "repository.git.sharedCrendentials";
     private static final String REPOSITORY_GIT_SHAREDCREDENTIALS_DELETED = "repository.git.sharedCredentials.deleted";
     private static final String TEMPORARY_GIT_PASSWORD = "temporary.git.password";
@@ -578,6 +578,7 @@ public class GitRepository
     {
         buildConfiguration.setProperty(REPOSITORY_GIT_COMMAND_TIMEOUT, Integer.valueOf(DEFAULT_COMMAND_TIMEOUT_IN_MINUTES));
         buildConfiguration.clearTree(REPOSITORY_GIT_VERBOSE_LOGS);
+        buildConfiguration.clearTree(REPOSITORY_GIT_FETCH_WHOLE_REPOSITORY);
         buildConfiguration.setProperty(REPOSITORY_GIT_USE_SHALLOW_CLONES, true);
         buildConfiguration.setProperty(REPOSITORY_GIT_USE_REMOTE_AGENT_CACHE, false);
         buildConfiguration.clearTree(REPOSITORY_GIT_USE_SUBMODULES);
@@ -674,6 +675,7 @@ public class GitRepository
                 .useSubmodules(config.getBoolean(REPOSITORY_GIT_USE_SUBMODULES, false))
                 .commandTimeout(config.getInt(REPOSITORY_GIT_COMMAND_TIMEOUT, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES))
                 .verboseLogs(config.getBoolean(REPOSITORY_GIT_VERBOSE_LOGS, false))
+                .refSpecOverride(config.getBoolean(REPOSITORY_GIT_FETCH_WHOLE_REPOSITORY, false) ? Constants.R_HEADS + "*" : null)
                 .sharedCredentialsId(sharedCredentialsId)
                 .build();
 
@@ -700,6 +702,7 @@ public class GitRepository
         configuration.setProperty(REPOSITORY_GIT_USE_SUBMODULES, accessData.isUseSubmodules());
         configuration.setProperty(REPOSITORY_GIT_COMMAND_TIMEOUT, accessData.getCommandTimeout());
         configuration.setProperty(REPOSITORY_GIT_VERBOSE_LOGS, accessData.isVerboseLogs());
+        configuration.setProperty(REPOSITORY_GIT_FETCH_WHOLE_REPOSITORY, accessData.getRefSpecOverride() != null);
 
         final Long sharedCredentialsId = accessData.getSharedCredentialsId();
         if (sharedCredentialsId!=null)

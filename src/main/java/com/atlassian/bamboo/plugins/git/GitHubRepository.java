@@ -33,6 +33,7 @@ import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.log4j.Logger;
+import org.eclipse.jgit.lib.Constants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,6 +60,7 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
     private static final String REPOSITORY_GITHUB_USE_SUBMODULES = "repository.github.useSubmodules";
     private static final String REPOSITORY_GITHUB_COMMAND_TIMEOUT = "repository.github.commandTimeout";
     private static final String REPOSITORY_GITHUB_VERBOSE_LOGS = "repository.github.verbose.logs";
+    private static final String REPOSITORY_GITHUB_FETCH_WHOLE_REPOSITORY = "repository.github.fetch.whole.repository";
 
     private static final String REPOSITORY_GITHUB_TEMPORARY_PASSWORD = "repository.github.temporary.password";
     private static final String TEMPORARY_GITHUB_PASSWORD_CHANGE = "temporary.github.password.change";
@@ -165,6 +167,7 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
     {
         buildConfiguration.setProperty(REPOSITORY_GITHUB_COMMAND_TIMEOUT, String.valueOf(GitRepository.DEFAULT_COMMAND_TIMEOUT_IN_MINUTES));
         buildConfiguration.clearTree(REPOSITORY_GITHUB_VERBOSE_LOGS);
+        buildConfiguration.clearTree(REPOSITORY_GITHUB_FETCH_WHOLE_REPOSITORY);
         buildConfiguration.setProperty(REPOSITORY_GITHUB_USE_SHALLOW_CLONES, true);
         buildConfiguration.clearTree(REPOSITORY_GITHUB_USE_SUBMODULES);
 
@@ -195,6 +198,7 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
                 .useSubmodules(config.getBoolean(REPOSITORY_GITHUB_USE_SUBMODULES))
                 .commandTimeout(config.getInt(REPOSITORY_GITHUB_COMMAND_TIMEOUT, GitRepository.DEFAULT_COMMAND_TIMEOUT_IN_MINUTES))
                 .verboseLogs(config.getBoolean(REPOSITORY_GITHUB_VERBOSE_LOGS, false))
+                .refSpecOverride(config.getBoolean(REPOSITORY_GITHUB_FETCH_WHOLE_REPOSITORY, false) ? Constants.R_HEADS + "*" : null)
                 .build();
 
 
@@ -214,6 +218,7 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
         configuration.setProperty(REPOSITORY_GITHUB_USE_SUBMODULES, isUseSubmodules());
         configuration.setProperty(REPOSITORY_GITHUB_COMMAND_TIMEOUT, getCommandTimeout());
         configuration.setProperty(REPOSITORY_GITHUB_VERBOSE_LOGS, getVerboseLogs());
+        configuration.setProperty(REPOSITORY_GITHUB_FETCH_WHOLE_REPOSITORY, accessData.getRefSpecOverride() != null);
 
         return configuration;
     }
@@ -416,6 +421,7 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
                                             .useSubmodules(gitHubAccessData.isUseSubmodules())
                                             .commandTimeout(gitHubAccessData.getCommandTimeout())
                                             .verboseLogs(gitHubAccessData.isVerboseLogs())
+                                            .refSpecOverride(gitHubAccessData.getRefSpecOverride())
                                             .build());
     }
 

@@ -149,7 +149,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
                     @Override
                     public String doWithTransport(@NotNull Transport transport) throws Exception
                     {
-                        return getRefSpecForName(transport, accessData.getVcsBranch().getName());
+                        return getRefSpecForName(transport, accessData.getVcsBranch().getName(), false);
                     }
                 });
             } catch (Exception e)
@@ -299,7 +299,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
                     @Override
                     public Void doWithTransport(@NotNull Transport transport) throws Exception
                     {
-                        final String resolvedRefSpec = getRefSpecForName(transport, targetRevision);
+                        final String resolvedRefSpec = getRefSpecForName(transport, targetRevision, true);
                         refSpecDescription.set(resolvedRefSpec);
 
                         buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.fetching", resolvedRefSpec, accessData.getRepositoryUrl())
@@ -498,10 +498,15 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
 
     // -------------------------------------------------------------------------------------- Basic Accessors / Mutators
     @NotNull
-    private String getRefSpecForName(@NotNull Transport transport, @Nullable final String name) throws Exception
+    private String getRefSpecForName(@NotNull Transport transport, @Nullable final String name, @NotNull boolean allowOverride) throws Exception
     {
         final String resolvedBranch;
-        if (StringUtils.startsWithAny(name, FQREF_PREFIXES))
+
+        if (allowOverride && StringUtils.isNotBlank(accessData.getRefSpecOverride()))
+        {
+            resolvedBranch = accessData.getRefSpecOverride();
+        }
+        else if (StringUtils.startsWithAny(name, FQREF_PREFIXES))
         {
             resolvedBranch = name;
         }

@@ -354,7 +354,11 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
             try
             {
                 final String resolvedRefSpec;
-                if (StringUtils.startsWithAny(targetBranchOrRevision, FQREF_PREFIXES))
+                if (StringUtils.isNotBlank(proxiedAccessData.getRefSpecOverride()))
+                {
+                    resolvedRefSpec = proxiedAccessData.getRefSpecOverride();
+                }
+                else if (StringUtils.startsWithAny(targetBranchOrRevision, FQREF_PREFIXES))
                 {
                     resolvedRefSpec = targetBranchOrRevision;
                 }
