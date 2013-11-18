@@ -581,6 +581,7 @@ public class GitRepository
         buildConfiguration.setProperty(REPOSITORY_GIT_USE_SHALLOW_CLONES, true);
         buildConfiguration.setProperty(REPOSITORY_GIT_USE_REMOTE_AGENT_CACHE, false);
         buildConfiguration.clearTree(REPOSITORY_GIT_USE_SUBMODULES);
+        buildConfiguration.setProperty(REPOSITORY_GIT_AUTHENTICATION_TYPE, GitAuthenticationType.NONE.name());
     }
 
     @Override
@@ -629,13 +630,13 @@ public class GitRepository
         final GitAuthenticationType gitAuthenticationType;
         final Long sharedCredentialsId;
 
-        final String chosenAuthentication = config.getString(REPOSITORY_GIT_AUTHENTICATION_TYPE);
+        final String chosenAuthentication = config.getString(REPOSITORY_GIT_AUTHENTICATION_TYPE, GitAuthenticationType.NONE.name());
         if (!chosenAuthentication.equals(SHARED_CREDENTIALS))
         {
             sharedCredentialsId = null;
-            sshPassphrase = config.getString(REPOSITORY_GIT_SSH_PASSPHRASE);
+            sshPassphrase = config.getString(REPOSITORY_GIT_SSH_PASSPHRASE, "");
             sshKey = config.getString(REPOSITORY_GIT_SSH_KEY, "");
-            gitAuthenticationType = GitAuthenticationType.valueOf(config.getString(REPOSITORY_GIT_AUTHENTICATION_TYPE));
+            gitAuthenticationType = GitAuthenticationType.valueOf(chosenAuthentication);
         }
         else
         {
