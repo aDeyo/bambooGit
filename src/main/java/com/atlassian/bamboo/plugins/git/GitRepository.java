@@ -121,7 +121,8 @@ public class GitRepository
     private static final String REPOSITORY_GIT_MAVEN_PATH = "repository.git.maven.path";
     private static final String REPOSITORY_GIT_COMMAND_TIMEOUT = "repository.git.commandTimeout";
     private static final String REPOSITORY_GIT_VERBOSE_LOGS = "repository.git.verbose.logs";
-    private static final String REPOSITORY_GIT_FETCH_WHOLE_REPOSITORY = "repository.git.fetch.whole.repository";
+    @VisibleForTesting
+    static final String REPOSITORY_GIT_FETCH_WHOLE_REPOSITORY = "repository.git.fetch.whole.repository";
     private static final String REPOSITORY_GIT_SHAREDCREDENTIALS_ID = "repository.git.sharedCrendentials";
     private static final String REPOSITORY_GIT_SHAREDCREDENTIALS_DELETED = "repository.git.sharedCredentials.deleted";
     private static final String TEMPORARY_GIT_PASSWORD = "temporary.git.password";

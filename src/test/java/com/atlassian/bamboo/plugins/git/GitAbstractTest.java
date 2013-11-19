@@ -74,7 +74,7 @@ public class GitAbstractTest
 
     public static void setRepositoryPropertiesWithFetchAll(GitRepository gitRepository, File repositorySourceDir, String branch) throws Exception
     {
-        setRepositoryProperties(gitRepository, repositorySourceDir.getAbsolutePath(), branch, null, null, ImmutableMap.of("REPOSITORY_GIT_FETCH_WHOLE_REPOSITORY", "true"));
+        setRepositoryProperties(gitRepository, repositorySourceDir.getAbsolutePath(), branch, null, null, ImmutableMap.of(GitRepository.REPOSITORY_GIT_FETCH_WHOLE_REPOSITORY, "true"));
     }
 
     public static void setRepositoryProperties(GitRepository gitRepository, File repositorySourceDir, String branch) throws Exception
