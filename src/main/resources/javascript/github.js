@@ -192,7 +192,9 @@
             return $.ajax({
                 type: 'POST',
                 url: url,
-                data: data,
+                data: JSON.stringify(data),
+                contentType: 'application/json',
+                processData: false,
                 dataType: 'json'
             }).always(function () { $container.removeClass(loadingClass); });
         },

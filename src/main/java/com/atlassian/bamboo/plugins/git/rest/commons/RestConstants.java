@@ -28,6 +28,7 @@ public class RestConstants
     public static final String OWNER = "owner";
     public static final String NAME  = "name";
 
+    public static final String REQUEST = "request";
     public static final String RESPONSE  = "response";
     // ------------------------------------------------------------------------------------------------- Type Properties
     // ---------------------------------------------------------------------------------------------------- Dependencies

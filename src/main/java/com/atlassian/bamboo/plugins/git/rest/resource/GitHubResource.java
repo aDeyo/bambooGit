@@ -7,6 +7,7 @@ import com.atlassian.bamboo.plugins.git.github.api.rest.entity.GitHubRepositoryE
 import com.atlassian.bamboo.plugins.git.rest.commons.RestConstants;
 import com.atlassian.bamboo.plugins.git.rest.entity.ListBranchesResponse;
 import com.atlassian.bamboo.plugins.git.rest.entity.ListRepositoriesResponse;
+import com.atlassian.bamboo.plugins.git.rest.entity.RestRequest;
 import com.atlassian.bamboo.repository.Repository;
 import com.atlassian.bamboo.repository.RepositoryData;
 import com.atlassian.bamboo.repository.RepositoryDataEntity;
@@ -25,7 +26,6 @@ import org.apache.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import javax.ws.rs.Consumes;
-import javax.ws.rs.FormParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -34,13 +34,10 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-
 import java.io.IOException;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 @Path(RestConstants.GITHUB)
-@Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, MediaType.APPLICATION_FORM_URLENCODED})
+@Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
 @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
 @Singleton
 public class GitHubResource
@@ -69,29 +66,24 @@ public class GitHubResource
      *
      * @param uriInfo
      * @param username
-     * @param password
-     * @param repositoryId
-     * @param query
      * @return
      */
     @POST
     @Path(RestConstants.REPOSITORIES + "/{" + RestConstants.USERNAME + "}")
     public Response getAvailableRepositories(@Context UriInfo uriInfo,
                                              @PathParam(RestConstants.USERNAME) String username,
-                                             @FormParam(RestConstants.PASSWORD) String password,
-                                             @FormParam(RestConstants.REPOSITORY_ID) long repositoryId,
-                                             @FormParam(RestConstants.QUERY) String query)
+                                             RestRequest request)
     {
-        if (repositoryId > 0 && StringUtils.isBlank(password))
+        if (request.getRepositoryId() > 0 && StringUtils.isBlank(request.getPassword()))
         {
-            password = getRepositoryPassword(repositoryId);
+            request.setPassword(getRepositoryPassword(request.getRepositoryId()));
         }
 
         RestResponse.Builder builder = RestResponse.builder();
 
         try
         {
-            GitHubAccessor gitHubAccessor = new GitHubAccessor(username, password);
+            GitHubAccessor gitHubAccessor = new GitHubAccessor(username, request.getPassword());
 
             ImmutableList<GitHubRepositoryEntity> repositories = GitHubRepositoryEntity.orderingByFullName().immutableSortedCopy(
                     Iterables.transform(gitHubAccessor.getAccessibleRepositories(),
@@ -128,10 +120,6 @@ public class GitHubResource
      *
      * @param uriInfo
      * @param owner
-     * @param name
-     * @param username
-     * @param password
-     * @param repositoryId
      * @return
      */
     @POST
@@ -139,20 +127,18 @@ public class GitHubResource
     public Response getBranches(@Context UriInfo uriInfo,
                                 @PathParam(RestConstants.OWNER) String owner,
                                 @PathParam(RestConstants.NAME) String name,
-                                @FormParam(RestConstants.USERNAME) String username,
-                                @FormParam(RestConstants.PASSWORD) String password,
-                                @FormParam(RestConstants.REPOSITORY_ID) long repositoryId)
+                                RestRequest request)
     {
-        if (repositoryId > 0 && StringUtils.isBlank(password))
+        if (request.getRepositoryId() > 0 && StringUtils.isBlank(request.getPassword()))
         {
-            password = getRepositoryPassword(repositoryId);
+            request.setPassword(getRepositoryPassword(request.getRepositoryId()));
         }
 
         RestResponse.Builder builder = RestResponse.builder();
 
         try
         {
-            GitHubAccessor gitHubAccessor = new GitHubAccessor(username, password);
+            GitHubAccessor gitHubAccessor = new GitHubAccessor(request.getUsername(), request.getPassword());
 
             ImmutableList<GitHubBranchEntity> branches = GitHubBranchEntity.orderingByName().immutableSortedCopy(
                     Iterables.transform(gitHubAccessor.getBranches(String.format("%s/%s", owner, name)),
