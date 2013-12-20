@@ -711,7 +711,14 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
         return buildChanges;
     }
 
-        private AuthorImpl getAuthor(RevCommit commit)
+    @NotNull
+    @Override
+    public String getBranchForSHA(@NotNull final File sourceDirectory, @NotNull final GitRepositoryAccessData accessData, final String revision, final String configuredBranch) throws RepositoryException
+    {
+        return configuredBranch;
+    }
+
+    private AuthorImpl getAuthor(RevCommit commit)
     {
         PersonIdent gitPerson = commit.getAuthorIdent();
         if (gitPerson == null)

@@ -16,6 +16,7 @@ import com.atlassian.bamboo.plan.PlanKeys;
 import com.atlassian.bamboo.plan.branch.BranchIntegrationHelper;
 import com.atlassian.bamboo.plan.branch.VcsBranch;
 import com.atlassian.bamboo.plan.branch.VcsBranchImpl;
+import com.atlassian.bamboo.plan.vcsRevision.PlanVcsRevisionData;
 import com.atlassian.bamboo.repository.AbstractStandaloneRepository;
 import com.atlassian.bamboo.repository.AdvancedConfigurationAwareRepository;
 import com.atlassian.bamboo.repository.BranchDetectionCapableRepository;
@@ -24,6 +25,7 @@ import com.atlassian.bamboo.repository.CacheDescription;
 import com.atlassian.bamboo.repository.CacheHandler;
 import com.atlassian.bamboo.repository.CacheId;
 import com.atlassian.bamboo.repository.CachingAwareRepository;
+import com.atlassian.bamboo.repository.CheckoutCustomRevisionDataAwareRepository;
 import com.atlassian.bamboo.repository.CustomVariableProviderRepository;
 import com.atlassian.bamboo.repository.DeploymentAwareRepository;
 import com.atlassian.bamboo.repository.MavenPomAccessor;
@@ -91,6 +93,7 @@ public class GitRepository
         SelectableAuthenticationRepository,
         CustomVariableProviderRepository,
         CustomSourceDirectoryAwareRepository,
+        CheckoutCustomRevisionDataAwareRepository,
         RequirementsAwareRepository,
         AdvancedConfigurationAwareRepository,
         BranchDetectionCapableRepository,
@@ -216,14 +219,27 @@ public class GitRepository
 
             final String latestRevision = helper.obtainLatestRevision();
             final String fetchRevision = customRevision != null ? customRevision : substitutedAccessData.getVcsBranch().getName();
+
             final String targetRevision = customRevision != null ? customRevision : latestRevision;
+
+            final File cacheDirectory = getCacheDirectory();
+
+            String effectiveBranch = null;
+            if (customRevision != null)
+            {
+                final String vcsBranchName = substitutedAccessData.getVcsBranch().getName();
+                final String branchForSHA = helper.getBranchForSHA(cacheDirectory, substitutedAccessData, customRevision, vcsBranchName);
+                if (!StringUtils.equals(branchForSHA, vcsBranchName))
+                {
+                    effectiveBranch = branchForSHA;
+                }
+            }
 
             if (latestRevision.equals(lastVcsRevisionKey) && customRevision == null)
             {
                 return new BuildRepositoryChangesImpl(latestRevision);
             }
 
-            final File cacheDirectory = getCacheDirectory();
             if (lastVcsRevisionKey == null)
             {
                 buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.ccRepositoryNeverChecked", fetchRevision));
@@ -253,7 +269,9 @@ public class GitRepository
                 {
                     throw new RepositoryException(e.getMessage(), e);
                 }
-                return new BuildRepositoryChangesImpl(targetRevision);
+                final BuildRepositoryChangesImpl buildRepositoryChanges = new BuildRepositoryChangesImpl(targetRevision);
+                buildRepositoryChanges.setEffectiveVcsBranchName(effectiveBranch);
+                return buildRepositoryChanges;
             }
 
             final BuildRepositoryChanges buildChanges = GitCacheDirectory.getCacheLock(cacheDirectory).withLock(new Supplier<BuildRepositoryChanges>()
@@ -286,6 +304,7 @@ public class GitRepository
                 }
             });
 
+            buildChanges.setEffectiveVcsBranchName(effectiveBranch);
             if (buildChanges != null && !buildChanges.getChanges().isEmpty())
             {
                 return buildChanges;
@@ -316,10 +335,25 @@ public class GitRepository
     @NotNull
     public String retrieveSourceCode(@NotNull final BuildContext buildContext, @Nullable final String vcsRevisionKey, @NotNull final File sourceDirectory, int depth) throws RepositoryException
     {
+        PlanVcsRevisionData planVcsRevisionData = new PlanVcsRevisionData(vcsRevisionKey, null);
+        return retrieveSourceCode(buildContext, planVcsRevisionData, sourceDirectory, depth);
+    }
+
+    @NotNull
+    @Override
+    public String retrieveSourceCode(@NotNull final BuildContext buildContext, @Nullable final PlanVcsRevisionData planVcsRevisionData, @NotNull final File sourceDirectory, int depth) throws RepositoryException
+    {
+        final String vcsRevisionKey = planVcsRevisionData.getVcsRevisionKey();
+        final String effectiveBranch = planVcsRevisionData.getEffectiveBranch();
+
         try
         {
             final GitRepositoryAccessData.Builder substitutedAccessDataBuilder = getSubstitutedAccessDataBuilder();
-            final boolean doShallowFetch = USE_SHALLOW_CLONES && accessData.isUseShallowClones() && depth == 1 && !isOnLocalAgent();
+            final boolean doShallowFetch = USE_SHALLOW_CLONES && accessData.isUseShallowClones() && depth == 1 && !isOnLocalAgent() && effectiveBranch != null;
+            if (effectiveBranch != null)
+            {
+                substitutedAccessDataBuilder.branch(effectiveBranch);
+            }
             substitutedAccessDataBuilder.useShallowClones(doShallowFetch);
             final GitRepositoryAccessData substitutedAccessData = substitutedAccessDataBuilder.build();
 

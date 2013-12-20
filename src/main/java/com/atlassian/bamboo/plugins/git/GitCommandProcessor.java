@@ -419,6 +419,26 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
     }
 
     @NotNull
+    public String getBranchForSHA(@NotNull File workingDirectory, @NotNull GitRepositoryAccessData accessData, String revision, String configuredBranch) throws RepositoryException
+    {
+        GitCommandBuilder commandBuilder = createCommandBuilder("branch", "-a", "--contains", revision);
+        final LineOutputHandlerImpl outputHandler = new LineOutputHandlerImpl();
+        runCommand(commandBuilder, workingDirectory, outputHandler);
+
+        String anyBranch="";
+        for (String branch : outputHandler.getLines())
+        {
+            Iterable<String> tokens = Splitter.on(" ").omitEmptyStrings().trimResults().split(branch);
+            anyBranch = Iterables.getLast(tokens);;
+            if (StringUtils.equals(anyBranch, configuredBranch))
+            {
+                return anyBranch;
+            }
+        }
+        return anyBranch;
+    }
+
+    @NotNull
     static ImmutableMap<String, String> parseLsRemoteOutput(final LineOutputHandlerImpl goh)
     {
         final ImmutableMap.Builder<String, String> refs = ImmutableMap.builder();
