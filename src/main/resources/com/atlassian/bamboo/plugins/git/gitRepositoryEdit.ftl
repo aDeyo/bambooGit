@@ -5,14 +5,31 @@
     [@ww.textfield labelKey='repository.git.repositoryUrl' name='repository.git.repositoryUrl' longField=true required=true helpKey='git.fields' /]
 
     [@ww.textfield labelKey='repository.git.branch' name='repository.git.branch' /]
-
+    [#if buildConfiguration.getBoolean('repository.git.sharedCredentials.deleted')]
+        [#if fn.hasRestrictedAdminPermission()]
+            [@ui.messageBox type="error" titleKey="repository.git.sharedCredentials.deleted.title"]
+                [@ww.text name="repository.git.sharedCredentials.deleted.edit"/]
+                <br/>
+                [@ww.text name="repository.git.sharedCredentials.deleted.update" ]
+                    [@ww.param][@ww.url action="configureSharedCredentials" namespace="/admin" /][/@ww.param]
+                [/@ww.text]
+            [/@ui.messageBox]
+        [#else]
+            [@ui.messageBox type="error" titleKey="repository.git.sharedCredentials.deleted.title"]
+                [@ww.text name="repository.git.sharedCredentials.deleted.edit"/]
+            [/@ui.messageBox]
+        [/#if]
+    [#else]
+        [#assign defaultSelected='repository.git.authenticationType' /]
+    [/#if]
     [@ww.select
         labelKey='repository.git.authenticationType'
         name='repository.git.authenticationType'
         toggle=true
         list=repository.authenticationTypes
         listKey='name'
-        listValue='label']
+        listValue='label'
+        value=defaultSelected! ]
     [/@ww.select]
 
     [@ui.bambooSection dependsOn='repository.git.authenticationType' showOn='PASSWORD']

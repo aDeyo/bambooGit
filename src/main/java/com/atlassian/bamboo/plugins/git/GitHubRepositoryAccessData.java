@@ -17,6 +17,7 @@ public final class GitHubRepositoryAccessData implements Serializable
     private boolean useSubmodules;
     private int commandTimeout;
     private boolean verboseLogs;
+    private String refSpecOverride;
 
     private transient ProxyRegistrationInfo proxyRegistrationInfo;
 
@@ -30,6 +31,7 @@ public final class GitHubRepositoryAccessData implements Serializable
         private boolean useSubmodules;
         private int commandTimeout;
         private boolean verboseLogs;
+        private String refSpecOverride;
 
         public Builder clone(GitHubRepositoryAccessData gitRepositoryAccessData)
         {
@@ -41,6 +43,7 @@ public final class GitHubRepositoryAccessData implements Serializable
             this.useSubmodules = gitRepositoryAccessData.useSubmodules;
             this.commandTimeout = gitRepositoryAccessData.commandTimeout;
             this.verboseLogs = gitRepositoryAccessData.verboseLogs;
+            this.refSpecOverride = gitRepositoryAccessData.refSpecOverride;
             return this;
         }
 
@@ -103,6 +106,12 @@ public final class GitHubRepositoryAccessData implements Serializable
             return this;
         }
 
+        public Builder refSpecOverride(final String refSpecOverride)
+        {
+            this.refSpecOverride = refSpecOverride;
+            return this;
+        }
+
         public GitHubRepositoryAccessData build()
         {
             GitHubRepositoryAccessData data = new GitHubRepositoryAccessData();
@@ -114,6 +123,7 @@ public final class GitHubRepositoryAccessData implements Serializable
             data.useSubmodules = this.useSubmodules;
             data.commandTimeout = this.commandTimeout;
             data.verboseLogs = this.verboseLogs;
+            data.refSpecOverride = this.refSpecOverride;
             return data;
         }
     }
@@ -180,6 +190,11 @@ public final class GitHubRepositoryAccessData implements Serializable
     public boolean isVerboseLogs()
     {
         return verboseLogs;
+    }
+
+    public String getRefSpecOverride()
+    {
+        return refSpecOverride;
     }
 
     public ProxyRegistrationInfo getProxyRegistrationInfo()

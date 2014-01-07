@@ -16,6 +16,7 @@ import com.atlassian.bamboo.plan.PlanKeys;
 import com.atlassian.bamboo.plan.branch.BranchIntegrationHelper;
 import com.atlassian.bamboo.plan.branch.VcsBranch;
 import com.atlassian.bamboo.plan.branch.VcsBranchImpl;
+import com.atlassian.bamboo.plan.vcsRevision.PlanVcsRevisionData;
 import com.atlassian.bamboo.repository.AbstractStandaloneRepository;
 import com.atlassian.bamboo.repository.AdvancedConfigurationAwareRepository;
 import com.atlassian.bamboo.repository.BranchDetectionCapableRepository;
@@ -24,6 +25,7 @@ import com.atlassian.bamboo.repository.CacheDescription;
 import com.atlassian.bamboo.repository.CacheHandler;
 import com.atlassian.bamboo.repository.CacheId;
 import com.atlassian.bamboo.repository.CachingAwareRepository;
+import com.atlassian.bamboo.repository.CheckoutCustomRevisionDataAwareRepository;
 import com.atlassian.bamboo.repository.CustomVariableProviderRepository;
 import com.atlassian.bamboo.repository.DeploymentAwareRepository;
 import com.atlassian.bamboo.repository.MavenPomAccessor;
@@ -53,7 +55,6 @@ import com.atlassian.sal.api.message.I18nResolver;
 import com.atlassian.util.concurrent.Supplier;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -92,6 +93,7 @@ public class GitRepository
         SelectableAuthenticationRepository,
         CustomVariableProviderRepository,
         CustomSourceDirectoryAwareRepository,
+        CheckoutCustomRevisionDataAwareRepository,
         RequirementsAwareRepository,
         AdvancedConfigurationAwareRepository,
         BranchDetectionCapableRepository,
@@ -122,7 +124,10 @@ public class GitRepository
     private static final String REPOSITORY_GIT_MAVEN_PATH = "repository.git.maven.path";
     private static final String REPOSITORY_GIT_COMMAND_TIMEOUT = "repository.git.commandTimeout";
     private static final String REPOSITORY_GIT_VERBOSE_LOGS = "repository.git.verbose.logs";
+    @VisibleForTesting
+    static final String REPOSITORY_GIT_FETCH_WHOLE_REPOSITORY = "repository.git.fetch.whole.repository";
     private static final String REPOSITORY_GIT_SHAREDCREDENTIALS_ID = "repository.git.sharedCrendentials";
+    private static final String REPOSITORY_GIT_SHAREDCREDENTIALS_DELETED = "repository.git.sharedCredentials.deleted";
     private static final String TEMPORARY_GIT_PASSWORD = "temporary.git.password";
     private static final String TEMPORARY_GIT_PASSWORD_CHANGE = "temporary.git.password.change";
     private static final String TEMPORARY_GIT_SSH_PASSPHRASE = "temporary.git.ssh.passphrase";
@@ -145,7 +150,7 @@ public class GitRepository
     // Maven 2 import
     private transient String pathToPom;
 
-
+    private boolean sharedCredentialsDeleted;
     // ---------------------------------------------------------------------------------------------------- Dependencies
     private transient CapabilityContext capabilityContext;
     private transient I18nResolver i18nResolver;
@@ -214,14 +219,28 @@ public class GitRepository
 
             final String latestRevision = helper.obtainLatestRevision();
             final String fetchRevision = customRevision != null ? customRevision : substitutedAccessData.getVcsBranch().getName();
+
             final String targetRevision = customRevision != null ? customRevision : latestRevision;
+
+            final File cacheDirectory = getCacheDirectory();
+
+            String overriddenBranch = null;
+            if (customRevision != null)
+            {
+                final String vcsBranchName = substitutedAccessData.getVcsBranch().getName();
+                final String branchForSha = helper.getBranchForSha(cacheDirectory, customRevision, vcsBranchName);
+                if (!StringUtils.equals(branchForSha, vcsBranchName))
+                {
+                    overriddenBranch = branchForSha;
+                    log.warn(buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.adjustBranchForSha", vcsBranchName, customRevision, overriddenBranch)));
+                }
+            }
 
             if (latestRevision.equals(lastVcsRevisionKey) && customRevision == null)
             {
                 return new BuildRepositoryChangesImpl(latestRevision);
             }
 
-            final File cacheDirectory = getCacheDirectory();
             if (lastVcsRevisionKey == null)
             {
                 buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.ccRepositoryNeverChecked", fetchRevision));
@@ -251,7 +270,9 @@ public class GitRepository
                 {
                     throw new RepositoryException(e.getMessage(), e);
                 }
-                return new BuildRepositoryChangesImpl(targetRevision);
+                final BuildRepositoryChangesImpl buildRepositoryChanges = new BuildRepositoryChangesImpl(targetRevision);
+                buildRepositoryChanges.setOverriddenVcsBranchName(overriddenBranch);
+                return buildRepositoryChanges;
             }
 
             final BuildRepositoryChanges buildChanges = GitCacheDirectory.getCacheLock(cacheDirectory).withLock(new Supplier<BuildRepositoryChanges>()
@@ -286,6 +307,7 @@ public class GitRepository
 
             if (buildChanges != null && !buildChanges.getChanges().isEmpty())
             {
+                buildChanges.setOverriddenVcsBranchName(overriddenBranch);
                 return buildChanges;
             }
             else
@@ -314,10 +336,25 @@ public class GitRepository
     @NotNull
     public String retrieveSourceCode(@NotNull final BuildContext buildContext, @Nullable final String vcsRevisionKey, @NotNull final File sourceDirectory, int depth) throws RepositoryException
     {
+        PlanVcsRevisionData planVcsRevisionData = new PlanVcsRevisionData(vcsRevisionKey, null);
+        return retrieveSourceCode(buildContext, planVcsRevisionData, sourceDirectory, depth);
+    }
+
+    @NotNull
+    @Override
+    public String retrieveSourceCode(@NotNull final BuildContext buildContext, @Nullable final PlanVcsRevisionData planVcsRevisionData, @NotNull final File sourceDirectory, int depth) throws RepositoryException
+    {
+        final String vcsRevisionKey = planVcsRevisionData.getVcsRevisionKey();
+        final String effectiveBranch = planVcsRevisionData.getOverriddenBranch();
+
         try
         {
             final GitRepositoryAccessData.Builder substitutedAccessDataBuilder = getSubstitutedAccessDataBuilder();
-            final boolean doShallowFetch = USE_SHALLOW_CLONES && accessData.isUseShallowClones() && depth == 1 && !isOnLocalAgent();
+            final boolean doShallowFetch = USE_SHALLOW_CLONES && accessData.isUseShallowClones() && depth == 1 && !isOnLocalAgent() && effectiveBranch == null;
+            if (effectiveBranch != null)
+            {
+                substitutedAccessDataBuilder.branch(new VcsBranchImpl(effectiveBranch));
+            }
             substitutedAccessDataBuilder.useShallowClones(doShallowFetch);
             final GitRepositoryAccessData substitutedAccessData = substitutedAccessDataBuilder.build();
 
@@ -577,9 +614,11 @@ public class GitRepository
     {
         buildConfiguration.setProperty(REPOSITORY_GIT_COMMAND_TIMEOUT, Integer.valueOf(DEFAULT_COMMAND_TIMEOUT_IN_MINUTES));
         buildConfiguration.clearTree(REPOSITORY_GIT_VERBOSE_LOGS);
+        buildConfiguration.clearTree(REPOSITORY_GIT_FETCH_WHOLE_REPOSITORY);
         buildConfiguration.setProperty(REPOSITORY_GIT_USE_SHALLOW_CLONES, true);
         buildConfiguration.setProperty(REPOSITORY_GIT_USE_REMOTE_AGENT_CACHE, false);
         buildConfiguration.clearTree(REPOSITORY_GIT_USE_SUBMODULES);
+        buildConfiguration.setProperty(REPOSITORY_GIT_AUTHENTICATION_TYPE, GitAuthenticationType.NONE.name());
     }
 
     @Override
@@ -628,25 +667,33 @@ public class GitRepository
         final GitAuthenticationType gitAuthenticationType;
         final Long sharedCredentialsId;
 
-        final String chosenAuthentication = config.getString(REPOSITORY_GIT_AUTHENTICATION_TYPE);
+        final String chosenAuthentication = config.getString(REPOSITORY_GIT_AUTHENTICATION_TYPE, GitAuthenticationType.NONE.name());
         if (!chosenAuthentication.equals(SHARED_CREDENTIALS))
         {
             sharedCredentialsId = null;
-            sshPassphrase = config.getString(REPOSITORY_GIT_SSH_PASSPHRASE);
+            sshPassphrase = config.getString(REPOSITORY_GIT_SSH_PASSPHRASE, "");
             sshKey = config.getString(REPOSITORY_GIT_SSH_KEY, "");
-            gitAuthenticationType = GitAuthenticationType.valueOf(config.getString(REPOSITORY_GIT_AUTHENTICATION_TYPE));
+            gitAuthenticationType = GitAuthenticationType.valueOf(chosenAuthentication);
         }
         else
         {
             sharedCredentialsId = config.getLong(REPOSITORY_GIT_SHAREDCREDENTIALS_ID, null);
             final CredentialsData credentials = credentialsAccessor.getCredentials(sharedCredentialsId);
 
-            Preconditions.checkArgument(credentials != null, "Shared Credentials with id '" + sharedCredentialsId + " are not found");
-
-            final PrivateKeyCredentials sshCredentials = new SshCredentialsImpl(credentials);
-            sshKey = sshCredentials.getKey();
-            sshPassphrase = sshCredentials.getPassphrase();
-            gitAuthenticationType = getAuthenticationTypeForSharedCredentials(config);
+            if (credentials != null)
+            {
+                final PrivateKeyCredentials sshCredentials = new SshCredentialsImpl(credentials);
+                sshKey = sshCredentials.getKey();
+                sshPassphrase = sshCredentials.getPassphrase();
+                gitAuthenticationType = getAuthenticationTypeForSharedCredentials(config);
+            }
+            else
+            {
+                sharedCredentialsDeleted = true;
+                sshKey = "";
+                sshPassphrase = "";
+                gitAuthenticationType = null;
+            }
         }
         
         final VcsBranchImpl branch = new VcsBranchImpl(StringUtils.defaultIfEmpty(config.getString(REPOSITORY_GIT_BRANCH, ""), "master"));
@@ -664,6 +711,7 @@ public class GitRepository
                 .useSubmodules(config.getBoolean(REPOSITORY_GIT_USE_SUBMODULES, false))
                 .commandTimeout(config.getInt(REPOSITORY_GIT_COMMAND_TIMEOUT, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES))
                 .verboseLogs(config.getBoolean(REPOSITORY_GIT_VERBOSE_LOGS, false))
+                .refSpecOverride(config.getBoolean(REPOSITORY_GIT_FETCH_WHOLE_REPOSITORY, false) ? Constants.R_HEADS + "*" : null)
                 .sharedCredentialsId(sharedCredentialsId)
                 .build();
 
@@ -690,10 +738,15 @@ public class GitRepository
         configuration.setProperty(REPOSITORY_GIT_USE_SUBMODULES, accessData.isUseSubmodules());
         configuration.setProperty(REPOSITORY_GIT_COMMAND_TIMEOUT, accessData.getCommandTimeout());
         configuration.setProperty(REPOSITORY_GIT_VERBOSE_LOGS, accessData.isVerboseLogs());
+        configuration.setProperty(REPOSITORY_GIT_FETCH_WHOLE_REPOSITORY, accessData.getRefSpecOverride() != null);
 
         final Long sharedCredentialsId = accessData.getSharedCredentialsId();
         if (sharedCredentialsId!=null)
         {
+            if (sharedCredentialsDeleted)
+            {
+                configuration.setProperty(REPOSITORY_GIT_SHAREDCREDENTIALS_DELETED, true);
+            }
             configuration.setProperty(REPOSITORY_GIT_SHAREDCREDENTIALS_ID, sharedCredentialsId);
             configuration.setProperty(REPOSITORY_GIT_AUTHENTICATION_TYPE, SHARED_CREDENTIALS);
         }
@@ -1080,5 +1133,10 @@ public class GitRepository
     public void deleteUnusedCaches(@NotNull final ValidationAware validationAware)
     {
         gitCacheHandler.deleteUnusedCaches(validationAware);
+    }
+
+    public boolean isSharedCredentialsDeleted()
+    {
+        return sharedCredentialsDeleted;
     }
 }

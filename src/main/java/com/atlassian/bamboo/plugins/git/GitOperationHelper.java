@@ -53,4 +53,7 @@ public interface GitOperationHelper
     boolean merge(@NotNull File workspaceDir, @NotNull String targetRevision, @NotNull String committerName, @NotNull String committerEmail) throws RepositoryException;
 
     BuildRepositoryChanges extractCommits(File cacheDirectory, String lastVcsRevisionKey, String targetRevision) throws RepositoryException;
+
+    @NotNull
+    String getBranchForSha(@NotNull File sourceDirectory, String revision, String configuredBranch) throws RepositoryException;
 }

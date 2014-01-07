@@ -23,6 +23,7 @@ public final class GitRepositoryAccessData implements Serializable
     private int commandTimeout;
     private boolean verboseLogs;
     private Long sharedCredentialsId;
+    private String refSpecOverride;
 
     private transient ProxyRegistrationInfo proxyRegistrationInfo;
 
@@ -41,6 +42,7 @@ public final class GitRepositoryAccessData implements Serializable
         private int commandTimeout;
         private boolean verboseLogs;
         private Long sharedCredentialsId;
+        private String refSpecOverride;
 
         public Builder clone(final GitRepositoryAccessData gitRepositoryAccessData)
         {
@@ -57,6 +59,7 @@ public final class GitRepositoryAccessData implements Serializable
             this.commandTimeout = gitRepositoryAccessData.commandTimeout;
             this.verboseLogs = gitRepositoryAccessData.verboseLogs;
             this.sharedCredentialsId = gitRepositoryAccessData.sharedCredentialsId;
+            this.refSpecOverride = gitRepositoryAccessData.refSpecOverride;
             return this;
         }
 
@@ -143,7 +146,12 @@ public final class GitRepositoryAccessData implements Serializable
             this.sharedCredentialsId = sharedCredentialsId;
             return this;
         }
-    
+
+        public Builder refSpecOverride(final String refSpecOverride)
+        {
+            this.refSpecOverride = refSpecOverride;
+            return this;
+        }
 
         public GitRepositoryAccessData build()
         {
@@ -161,6 +169,7 @@ public final class GitRepositoryAccessData implements Serializable
             data.commandTimeout = this.commandTimeout;
             data.verboseLogs = this.verboseLogs;
             data.sharedCredentialsId = this.sharedCredentialsId;
+            data.refSpecOverride = this.refSpecOverride;
             return data;
         }
       
@@ -272,5 +281,10 @@ public final class GitRepositoryAccessData implements Serializable
     {
         this.sharedCredentialsId = sharedCredentialsId;
     }
-    
+
+    @Nullable
+    public String getRefSpecOverride()
+    {
+        return refSpecOverride;
+    }
 }

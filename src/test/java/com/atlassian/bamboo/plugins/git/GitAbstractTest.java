@@ -31,6 +31,7 @@ import com.atlassian.bamboo.variable.VariableDefinitionManager;
 import com.atlassian.bamboo.ww2.actions.build.admin.create.BuildConfiguration;
 import com.atlassian.plugin.PluginAccessor;
 import com.atlassian.sal.api.message.I18nResolver;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
@@ -70,6 +71,11 @@ public class GitAbstractTest
     protected static final String COMITTER_EMAIL = "committer@example.com";
     private static final String REPOSITORY_GIT_AUTHENTICATION_TYPE = "repository.git.authenticationType";
     protected static final EncryptionService encryptionService = new EncryptionServiceImpl();
+
+    public static void setRepositoryPropertiesWithFetchAll(GitRepository gitRepository, File repositorySourceDir, String branch) throws Exception
+    {
+        setRepositoryProperties(gitRepository, repositorySourceDir.getAbsolutePath(), branch, null, null, ImmutableMap.of(GitRepository.REPOSITORY_GIT_FETCH_WHOLE_REPOSITORY, "true"));
+    }
 
     public static void setRepositoryProperties(GitRepository gitRepository, File repositorySourceDir, String branch) throws Exception
     {

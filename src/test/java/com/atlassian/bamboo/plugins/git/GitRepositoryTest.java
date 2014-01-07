@@ -56,7 +56,7 @@ public class GitRepositoryTest extends GitAbstractTest
         ZipResourceDirectory.copyZipResourceToDirectory("basic-repository.zip", testRepository);
         final String commitOnlyOnMyBranch = "cb05712da0a59040b8eb867f48b84fad292974bf";
         final GitRepository gitRepository = createGitRepository();
-        setRepositoryProperties(gitRepository, testRepository, "master");
+        setRepositoryPropertiesWithFetchAll(gitRepository, testRepository, "master");
 
         gitRepository.retrieveSourceCode(mockBuildContext(), commitOnlyOnMyBranch, getCheckoutDir(gitRepository));
     }

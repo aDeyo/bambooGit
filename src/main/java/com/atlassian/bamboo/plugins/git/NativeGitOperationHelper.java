@@ -354,7 +354,11 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
             try
             {
                 final String resolvedRefSpec;
-                if (StringUtils.startsWithAny(targetBranchOrRevision, FQREF_PREFIXES))
+                if (StringUtils.isNotBlank(proxiedAccessData.getRefSpecOverride()))
+                {
+                    resolvedRefSpec = proxiedAccessData.getRefSpecOverride();
+                }
+                else if (StringUtils.startsWithAny(targetBranchOrRevision, FQREF_PREFIXES))
                 {
                     resolvedRefSpec = targetBranchOrRevision;
                 }
@@ -466,6 +470,13 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
             log.debug(GET_REMOTE_REFS_CACHE.stats());
         }
         return callResult;
+    }
+
+    @NotNull
+    @Override
+    public String getBranchForSha(@NotNull File sourceDirectory, String revision, String configuredBranch) throws RepositoryException
+    {
+        return gitCommandProcessor.getBranchForSha(sourceDirectory, revision, configuredBranch);
     }
 
     @NotNull
