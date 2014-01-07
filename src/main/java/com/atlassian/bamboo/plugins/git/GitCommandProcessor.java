@@ -444,6 +444,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
         final ImmutableMap.Builder<String, String> refs = ImmutableMap.builder();
         for (final String ref : goh.getLines())
         {
+            log.debug("[" + ref + "]");
             if (ref.contains("^{}"))
             {
                 continue;
