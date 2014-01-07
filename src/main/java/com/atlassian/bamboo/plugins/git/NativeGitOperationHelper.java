@@ -474,9 +474,9 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
 
     @NotNull
     @Override
-    public String getBranchForSHA(@NotNull File sourceDirectory, @NotNull GitRepositoryAccessData accessData, String revision, String configuredBranch) throws RepositoryException
+    public String getBranchForSha(@NotNull File sourceDirectory, String revision, String configuredBranch) throws RepositoryException
     {
-        return gitCommandProcessor.getBranchForSHA(sourceDirectory, accessData, revision, configuredBranch);
+        return gitCommandProcessor.getBranchForSha(sourceDirectory, revision, configuredBranch);
     }
 
     @NotNull

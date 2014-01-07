@@ -419,7 +419,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
     }
 
     @NotNull
-    public String getBranchForSHA(@NotNull File workingDirectory, @NotNull GitRepositoryAccessData accessData, String revision, String configuredBranch) throws RepositoryException
+    public String getBranchForSha(@NotNull File workingDirectory, String revision, String configuredBranch) throws RepositoryException
     {
         GitCommandBuilder commandBuilder = createCommandBuilder("branch", "-a", "--contains", revision);
         final LineOutputHandlerImpl outputHandler = new LineOutputHandlerImpl();

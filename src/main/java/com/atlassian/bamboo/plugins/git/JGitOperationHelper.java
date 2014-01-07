@@ -713,7 +713,7 @@ public class JGitOperationHelper extends AbstractGitOperationHelper
 
     @NotNull
     @Override
-    public String getBranchForSHA(@NotNull final File sourceDirectory, @NotNull final GitRepositoryAccessData accessData, final String revision, final String configuredBranch) throws RepositoryException
+    public String getBranchForSha(@NotNull final File sourceDirectory, final String revision, final String configuredBranch) throws RepositoryException
     {
         return configuredBranch;
     }

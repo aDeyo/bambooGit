@@ -55,5 +55,5 @@ public interface GitOperationHelper
     BuildRepositoryChanges extractCommits(File cacheDirectory, String lastVcsRevisionKey, String targetRevision) throws RepositoryException;
 
     @NotNull
-    String getBranchForSHA(@NotNull File sourceDirectory, @NotNull GitRepositoryAccessData accessData, String revision, String configuredBranch) throws RepositoryException;
+    String getBranchForSha(@NotNull File sourceDirectory, String revision, String configuredBranch) throws RepositoryException;
 }

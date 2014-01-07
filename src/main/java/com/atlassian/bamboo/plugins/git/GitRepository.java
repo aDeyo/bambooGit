@@ -224,14 +224,15 @@ public class GitRepository
 
             final File cacheDirectory = getCacheDirectory();
 
-            String effectiveBranch = null;
+            String overriddenBranch = null;
             if (customRevision != null)
             {
                 final String vcsBranchName = substitutedAccessData.getVcsBranch().getName();
-                final String branchForSHA = helper.getBranchForSHA(cacheDirectory, substitutedAccessData, customRevision, vcsBranchName);
-                if (!StringUtils.equals(branchForSHA, vcsBranchName))
+                final String branchForSha = helper.getBranchForSha(cacheDirectory, customRevision, vcsBranchName);
+                if (!StringUtils.equals(branchForSha, vcsBranchName))
                 {
-                    effectiveBranch = branchForSHA;
+                    overriddenBranch = branchForSha;
+                    log.warn(buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.adjustBranchForSha", vcsBranchName, customRevision, overriddenBranch)));
                 }
             }
 
@@ -270,7 +271,7 @@ public class GitRepository
                     throw new RepositoryException(e.getMessage(), e);
                 }
                 final BuildRepositoryChangesImpl buildRepositoryChanges = new BuildRepositoryChangesImpl(targetRevision);
-                buildRepositoryChanges.setEffectiveVcsBranchName(effectiveBranch);
+                buildRepositoryChanges.setOverriddenVcsBranchName(overriddenBranch);
                 return buildRepositoryChanges;
             }
 
@@ -304,9 +305,9 @@ public class GitRepository
                 }
             });
 
-            buildChanges.setEffectiveVcsBranchName(effectiveBranch);
             if (buildChanges != null && !buildChanges.getChanges().isEmpty())
             {
+                buildChanges.setOverriddenVcsBranchName(overriddenBranch);
                 return buildChanges;
             }
             else
@@ -344,15 +345,15 @@ public class GitRepository
     public String retrieveSourceCode(@NotNull final BuildContext buildContext, @Nullable final PlanVcsRevisionData planVcsRevisionData, @NotNull final File sourceDirectory, int depth) throws RepositoryException
     {
         final String vcsRevisionKey = planVcsRevisionData.getVcsRevisionKey();
-        final String effectiveBranch = planVcsRevisionData.getEffectiveBranch();
+        final String effectiveBranch = planVcsRevisionData.getOverriddenBranch();
 
         try
         {
             final GitRepositoryAccessData.Builder substitutedAccessDataBuilder = getSubstitutedAccessDataBuilder();
-            final boolean doShallowFetch = USE_SHALLOW_CLONES && accessData.isUseShallowClones() && depth == 1 && !isOnLocalAgent() && effectiveBranch != null;
+            final boolean doShallowFetch = USE_SHALLOW_CLONES && accessData.isUseShallowClones() && depth == 1 && !isOnLocalAgent() && effectiveBranch == null;
             if (effectiveBranch != null)
             {
-                substitutedAccessDataBuilder.branch(effectiveBranch);
+                substitutedAccessDataBuilder.branch(new VcsBranchImpl(effectiveBranch));
             }
             substitutedAccessDataBuilder.useShallowClones(doShallowFetch);
             final GitRepositoryAccessData substitutedAccessData = substitutedAccessDataBuilder.build();
