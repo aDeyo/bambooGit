@@ -224,21 +224,21 @@ public class GitRepository
 
             final File cacheDirectory = getCacheDirectory();
 
-            String overriddenBranch = null;
+            if (latestRevision.equals(lastVcsRevisionKey) && customRevision == null)
+            {
+                return new BuildRepositoryChangesImpl(latestRevision);
+            }
+
+            VcsBranch overriddenBranch = null;
             if (customRevision != null)
             {
                 final String vcsBranchName = substitutedAccessData.getVcsBranch().getName();
                 final String branchForSha = helper.getBranchForSha(cacheDirectory, customRevision, vcsBranchName);
                 if (!StringUtils.equals(branchForSha, vcsBranchName))
                 {
-                    overriddenBranch = branchForSha;
-                    log.warn(buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.adjustBranchForSha", vcsBranchName, customRevision, overriddenBranch)));
+                    overriddenBranch = new VcsBranchImpl(branchForSha);
+                    log.warn(buildLogger.addBuildLogEntry(i18nResolver.getText("repository.git.messages.adjustBranchForSha", vcsBranchName, customRevision, overriddenBranch.getName())));
                 }
-            }
-
-            if (latestRevision.equals(lastVcsRevisionKey) && customRevision == null)
-            {
-                return new BuildRepositoryChangesImpl(latestRevision);
             }
 
             if (lastVcsRevisionKey == null)
@@ -271,7 +271,7 @@ public class GitRepository
                     throw new RepositoryException(e.getMessage(), e);
                 }
                 final BuildRepositoryChangesImpl buildRepositoryChanges = new BuildRepositoryChangesImpl(targetRevision);
-                buildRepositoryChanges.setOverriddenVcsBranchName(overriddenBranch);
+                buildRepositoryChanges.setOverriddenVcsBranch(overriddenBranch);
                 return buildRepositoryChanges;
             }
 
@@ -307,7 +307,7 @@ public class GitRepository
 
             if (buildChanges != null && !buildChanges.getChanges().isEmpty())
             {
-                buildChanges.setOverriddenVcsBranchName(overriddenBranch);
+                buildChanges.setOverriddenVcsBranch(overriddenBranch);
                 return buildChanges;
             }
             else
