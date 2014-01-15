@@ -345,7 +345,7 @@ public class GitRepository
     public String retrieveSourceCode(@NotNull final BuildContext buildContext, @Nullable final PlanVcsRevisionData planVcsRevisionData, @NotNull final File sourceDirectory, int depth) throws RepositoryException
     {
         final String vcsRevisionKey = planVcsRevisionData.getVcsRevisionKey();
-        final String effectiveBranch = planVcsRevisionData.getOverriddenBranch();
+        final VcsBranch effectiveBranch = planVcsRevisionData.getOverriddenBranch();
 
         try
         {
@@ -353,7 +353,7 @@ public class GitRepository
             final boolean doShallowFetch = USE_SHALLOW_CLONES && accessData.isUseShallowClones() && depth == 1 && !isOnLocalAgent() && effectiveBranch == null;
             if (effectiveBranch != null)
             {
-                substitutedAccessDataBuilder.branch(new VcsBranchImpl(effectiveBranch));
+                substitutedAccessDataBuilder.branch(effectiveBranch);
             }
             substitutedAccessDataBuilder.useShallowClones(doShallowFetch);
             final GitRepositoryAccessData substitutedAccessData = substitutedAccessDataBuilder.build();
