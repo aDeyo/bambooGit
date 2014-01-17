@@ -496,7 +496,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
             {
                 buildLogger.addBuildLogEntry(maskedCommandLine);
             }
-            log.debug("Running in " + workingDirectory + ": '" + maskedCommandLine + "'");
+            log.debug("Running in " + workingDirectory + ": [" + maskedCommandLine + "]");
         }
 
         final ExternalProcessBuilder externalProcessBuilder = new ExternalProcessBuilder()
