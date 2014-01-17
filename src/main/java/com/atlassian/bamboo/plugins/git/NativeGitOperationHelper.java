@@ -10,6 +10,7 @@ import com.atlassian.bamboo.ssh.ProxyConnectionData;
 import com.atlassian.bamboo.ssh.ProxyConnectionDataBuilder;
 import com.atlassian.bamboo.ssh.ProxyException;
 import com.atlassian.bamboo.ssh.SshProxyService;
+import com.atlassian.bamboo.util.CacheAwareness;
 import com.atlassian.bamboo.util.CallableResultCache;
 import com.atlassian.bamboo.util.PasswordMaskingUtils;
 import com.atlassian.bamboo.utils.Pair;
@@ -52,7 +53,10 @@ public class NativeGitOperationHelper extends AbstractGitOperationHelper impleme
     GitCommandProcessor gitCommandProcessor;
 
     private final static CallableResultCache<ImmutableMap<String, String>> GET_REMOTE_REFS_CACHE =
-            CallableResultCache.build(CacheBuilder.newBuilder().expireAfterWrite(15, TimeUnit.SECONDS));
+            CallableResultCache.buildAlwaysInvalidating(
+                    CacheBuilder.newBuilder().expireAfterWrite(15, TimeUnit.SECONDS),
+                    CacheAwareness.BRANCH_DETECTION, CacheAwareness.CHANGE_DETECTION
+            );
 
     // ---------------------------------------------------------------------------------------------------- Dependencies
     // ---------------------------------------------------------------------------------------------------- Constructors
