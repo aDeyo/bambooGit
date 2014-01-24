@@ -20,6 +20,7 @@ import com.atlassian.bamboo.repository.RepositoryException;
 import com.atlassian.bamboo.security.EncryptionService;
 import com.atlassian.bamboo.ssh.SshProxyService;
 import com.atlassian.bamboo.template.TemplateRenderer;
+import com.atlassian.bamboo.util.RequestCacheThreadLocal;
 import com.atlassian.bamboo.utils.error.ErrorCollection;
 import com.atlassian.bamboo.v2.build.BuildContext;
 import com.atlassian.bamboo.v2.build.BuildRepositoryChanges;
@@ -28,7 +29,6 @@ import com.atlassian.bamboo.v2.build.repository.CustomSourceDirectoryAwareReposi
 import com.atlassian.bamboo.variable.CustomVariableContext;
 import com.atlassian.bamboo.ww2.actions.build.admin.create.BuildConfiguration;
 import com.atlassian.sal.api.message.I18nResolver;
-import com.opensymphony.webwork.ServletActionContext;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.EqualsBuilder;
@@ -396,7 +396,7 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
 
     public String getOptionDescription()
     {
-        String capabilitiesLink = ServletActionContext.getRequest().getContextPath() + "/admin/agent/configureSharedLocalCapabilities.action";
+        String capabilitiesLink = RequestCacheThreadLocal.getContextPath() + "/admin/agent/configureSharedLocalCapabilities.action";
         return i18nResolver.getText("repository.git.description", getGitRepository().getGitCapability(), capabilitiesLink);
     }
 
