@@ -4,11 +4,11 @@ import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.atlassian.bamboo.commit.CommitContext;
 import com.atlassian.bamboo.repository.RepositoryException;
 import com.atlassian.bamboo.ssh.ProxyErrorReceiver;
-import com.atlassian.bamboo.util.BambooFileUtils;
 import com.atlassian.bamboo.util.BambooFilenameUtils;
 import com.atlassian.bamboo.util.BambooStringUtils;
 import com.atlassian.bamboo.util.Narrow;
 import com.atlassian.bamboo.util.PasswordMaskingUtils;
+import com.atlassian.bamboo.util.SharedTemporaryFiles;
 import com.atlassian.bamboo.utils.Pair;
 import com.atlassian.utils.process.ExternalProcess;
 import com.atlassian.utils.process.ExternalProcessBuilder;
@@ -108,13 +108,13 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
             //on Windows, git cannot cope with GIT_SSH pointing to a batch file located in a directory with spaces in its name
             final boolean tmpDirHasSpaceInName = SystemUtils.getJavaIoTmpDir().getAbsolutePath().contains(" ");
 
-            final BambooFileUtils.TemporaryFileSpecBuilder specBuilder =
-                    new BambooFileUtils.TemporaryFileSpecBuilder(scriptContent, "bamboo-ssh.")
-                            .setSuffix(BambooFilenameUtils.getScriptSuffix())
-                            .setExecutable(true)
-                            .setPrefer83PathsOnWindows(tmpDirHasSpaceInName);
+            SharedTemporaryFiles.FileSpecBuilder specBuilder = SharedTemporaryFiles.builder(scriptContent)
+                    .setPrefix("bamboo-ssh.")
+                    .setSuffix(BambooFilenameUtils.getScriptSuffix())
+                    .setExecutable(true)
+                    .setPrefer83PathsOnWindows(tmpDirHasSpaceInName);
 
-            final File sshScript = BambooFileUtils.getSharedTemporaryFile(specBuilder.build());
+            final File sshScript = SharedTemporaryFiles.create(specBuilder.build());
             return sshScript.getAbsolutePath();
         }
         catch (IOException e)
