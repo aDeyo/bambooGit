@@ -1,8 +1,8 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.bamboo.build.fileserver.BuildDirectoryManager;
 import com.atlassian.bamboo.repository.RepositoryException;
 import com.atlassian.bamboo.v2.build.BuildRepositoryChanges;
-import com.atlassian.bamboo.v2.build.agent.remote.RemoteBuildDirectoryManager;
 import com.google.common.collect.Iterables;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
@@ -192,7 +192,7 @@ public class ShallowClonesTest extends GitAbstractTest
     {
         GitRepository gitRepository = createGitRepository();
 
-        gitRepository.setBuildDirectoryManager(Mockito.mock(RemoteBuildDirectoryManager.class, new Returns(createTempDirectory())));
+        gitRepository.setBuildDirectoryManager(Mockito.mock(BuildDirectoryManager.class, new Returns(createTempDirectory())));
 
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("repository.git.useShallowClones", shallow);

@@ -1,5 +1,7 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.bamboo.agent.AgentType;
+import com.atlassian.bamboo.agent.AgentTypeHolder;
 import com.atlassian.bamboo.author.Author;
 import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.atlassian.bamboo.build.logger.NullBuildLogger;
@@ -47,7 +49,6 @@ import com.atlassian.bamboo.v2.build.BuildRepositoryChanges;
 import com.atlassian.bamboo.v2.build.BuildRepositoryChangesImpl;
 import com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext;
 import com.atlassian.bamboo.v2.build.agent.capability.Requirement;
-import com.atlassian.bamboo.v2.build.agent.remote.RemoteBuildDirectoryManager;
 import com.atlassian.bamboo.v2.build.repository.CustomSourceDirectoryAwareRepository;
 import com.atlassian.bamboo.v2.build.repository.RequirementsAwareRepository;
 import com.atlassian.bamboo.ww2.actions.build.admin.create.BuildConfiguration;
@@ -432,7 +433,7 @@ public class GitRepository
 
     private boolean isOnLocalAgent()
     {
-        return !(buildDirectoryManager instanceof RemoteBuildDirectoryManager);
+        return AgentTypeHolder.get()==AgentType.LOCAL;
     }
 
     @NotNull
