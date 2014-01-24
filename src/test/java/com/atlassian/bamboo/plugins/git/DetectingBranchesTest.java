@@ -1,5 +1,6 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.bamboo.agent.AgentType;
 import com.atlassian.bamboo.plan.branch.VcsBranch;
 import com.atlassian.bamboo.plan.branch.VcsBranchImpl;
 import com.atlassian.testtools.ZipResourceDirectory;
@@ -20,7 +21,7 @@ public class DetectingBranchesTest extends GitAbstractTest
         File testRepository = createTempDirectory();
         ZipResourceDirectory.copyZipResourceToDirectory("detect-branches/detect-branches-repo.zip", testRepository);
 
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(gitRepository, testRepository);
 
         List<VcsBranch> expectedBranches = Lists.<VcsBranch>newArrayList(

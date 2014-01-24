@@ -1,5 +1,6 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.bamboo.agent.AgentType;
 import com.atlassian.bamboo.plan.branch.BranchIntegrationService;
 import com.atlassian.bamboo.repository.RepositoryException;
 import com.atlassian.bamboo.v2.build.BuildRepositoryChanges;
@@ -100,7 +101,7 @@ public class CheckingOutTagsTest extends GitAbstractTest
     @Test(dataProvider = "refsData")
     public void testCheckoutBranchOrTag(String ref, String expectedContents) throws Exception
     {
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(gitRepository, srcDir, ref);
 
         BuildRepositoryChanges changes = gitRepository.collectChangesSinceLastBuild(PLAN_KEY.getKey(), null);
@@ -127,7 +128,7 @@ public class CheckingOutTagsTest extends GitAbstractTest
     @Test(dataProvider = "invalidRefsData", expectedExceptions = RepositoryException.class, expectedExceptionsMessageRegExp = "Cannot determine head revision of .*")
     public void testCheckoutNonExistingBranchOrTag(String ref) throws Exception
     {
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(gitRepository, srcDir, ref);
 
         gitRepository.collectChangesSinceLastBuild(PLAN_KEY.getKey(), null);
@@ -152,7 +153,7 @@ public class CheckingOutTagsTest extends GitAbstractTest
     @Test(dataProvider = "localBranchesData")
     public void testLocalBranchReflectsRemoteCached(String ref, String localBranch, String expectedContents) throws Exception
     {
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(gitRepository, srcDir, ref);
 
         BuildRepositoryChanges changes = gitRepository.collectChangesSinceLastBuild(PLAN_KEY.getKey(), null);
@@ -164,7 +165,7 @@ public class CheckingOutTagsTest extends GitAbstractTest
     @Test(dataProvider = "localBranchesData")
     public void testLocalBranchReflectsRemoteDirect(String ref, String localBranch, String expectedContents) throws Exception
     {
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(gitRepository, srcDir, ref);
 
         String expectedRevision = srcRepo.srcRepo.getRefDatabase().getRef(ref).getObjectId().name();
@@ -176,7 +177,7 @@ public class CheckingOutTagsTest extends GitAbstractTest
     @Test
     public void testSwitchingBetweenBranchesWithCache() throws Exception
     {
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(gitRepository, srcDir, "master");
 
         BuildRepositoryChanges changes = gitRepository.collectChangesSinceLastBuild(PLAN_KEY.getKey(), null);
@@ -194,7 +195,7 @@ public class CheckingOutTagsTest extends GitAbstractTest
     @Test
     public void testSwitchingBetweenBranchesDirect() throws Exception
     {
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(gitRepository, srcDir, "master");
 
         final String masterHead = srcRepo.srcRepo.getRefDatabase().getRef("refs/heads/master").getObjectId().name();

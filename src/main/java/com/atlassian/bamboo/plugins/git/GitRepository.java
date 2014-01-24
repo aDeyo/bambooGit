@@ -74,6 +74,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.transport.URIish;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.io.IOException;
@@ -431,7 +432,9 @@ public class GitRepository
         }
     }
 
-    private boolean isOnLocalAgent()
+    @VisibleForTesting
+    @TestOnly
+    protected boolean isOnLocalAgent()
     {
         return AgentTypeHolder.get()==AgentType.LOCAL;
     }

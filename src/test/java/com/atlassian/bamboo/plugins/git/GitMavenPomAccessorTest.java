@@ -1,5 +1,6 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.bamboo.agent.AgentType;
 import com.atlassian.bamboo.repository.MavenPomAccessor;
 import com.atlassian.bamboo.repository.RepositoryException;
 import com.atlassian.bamboo.ssh.SshProxyService;
@@ -73,7 +74,7 @@ public class GitMavenPomAccessorTest extends GitAbstractTest
     @Test(dataProvider = "pomPaths")
     public void testCheckoutMavenPom(Object pathToPom, final String expectedPom) throws Exception
     {
-        GitRepository repository = createGitRepository();
+        GitRepository repository = createGitRepository(AgentType.LOCAL);
 
         GitRepositoryTest.setRepositoryProperties(repository, repoWithPoms.getAbsolutePath(), Collections.singletonMap("repository.git.maven.path", pathToPom));
         MavenPomAccessor pomAccessor = repository.getMavenPomAccessor();
@@ -112,7 +113,7 @@ public class GitMavenPomAccessorTest extends GitAbstractTest
         {
             createGitRepoWithFiles(perTestRepo, Collections.singletonList(mockedPath));
 
-            GitRepository repository = createGitRepository();
+            GitRepository repository = createGitRepository(AgentType.LOCAL);
 
             GitRepositoryTest.setRepositoryProperties(repository, perTestRepo.getAbsolutePath(), Collections.singletonMap("repository.git.maven.path", pathToPom));
             MavenPomAccessor pomAccessor = repository.getMavenPomAccessor();
