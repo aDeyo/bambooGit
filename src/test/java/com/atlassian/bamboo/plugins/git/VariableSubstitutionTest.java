@@ -1,5 +1,6 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.bamboo.agent.AgentType;
 import com.atlassian.bamboo.utils.error.ErrorCollection;
 import com.atlassian.bamboo.variable.CustomVariableContext;
 import com.atlassian.bamboo.variable.CustomVariableContextImpl;
@@ -18,11 +19,11 @@ public class VariableSubstitutionTest extends GitAbstractTest
     public void testIfCachesAreEqual() throws Exception
     {
         File buildDir = createTempDirectory();
-        GitRepository a = createGitRepository();
+        GitRepository a = createGitRepository(AgentType.LOCAL);
         a.setWorkingDir(buildDir);
         setRepositoryProperties(a, "value");
 
-        GitRepository b = createGitRepository();
+        GitRepository b = createGitRepository(AgentType.LOCAL);
         b.setWorkingDir(buildDir);
         setRepositoryProperties(b, "${bamboo.variable}");
 
@@ -46,7 +47,7 @@ public class VariableSubstitutionTest extends GitAbstractTest
     @Test(dataProvider = "validationData")
     public void testIfValidationWithVariablesIsTheSameAsPlain(final String plainUrl, final String variableUrl, final String variableValue) throws Exception
     {
-        GitRepository repository = createGitRepository();
+        GitRepository repository = createGitRepository(AgentType.LOCAL);
 
         CustomVariableContext customVariableContext = new CustomVariableContextImpl();
         customVariableContext.setVariables(Maps.<String, VariableDefinitionContext>newHashMap());

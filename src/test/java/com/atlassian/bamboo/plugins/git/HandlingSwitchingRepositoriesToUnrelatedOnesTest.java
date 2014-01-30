@@ -1,5 +1,6 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.bamboo.agent.AgentType;
 import com.atlassian.bamboo.plugins.git.testutils.ExtractComments;
 import com.atlassian.bamboo.v2.build.BuildContext;
 import com.atlassian.bamboo.v2.build.BuildRepositoryChanges;
@@ -50,7 +51,7 @@ public class HandlingSwitchingRepositoriesToUnrelatedOnesTest extends GitAbstrac
     public void testCollectChangesWithUnrelatedPreviousRevision(String previousChangeset) throws Exception
     {
         File source = new File(sourceRepositoriesBaseHeads, "5");
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(gitRepository, source);
 
         BuildRepositoryChanges changes = gitRepository.collectChangesSinceLastBuild(PLAN_KEY.getKey(), previousChangeset);
@@ -66,7 +67,7 @@ public class HandlingSwitchingRepositoriesToUnrelatedOnesTest extends GitAbstrac
     {
         // This scenario is not very likely to happen - different repo would need to appear at the same URL
         File commonSource = createTempDirectory();
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(gitRepository, commonSource);
 
         FileUtils.copyDirectory(new File(sourceRepositoriesBaseDetached, "5"), commonSource);
@@ -89,7 +90,7 @@ public class HandlingSwitchingRepositoriesToUnrelatedOnesTest extends GitAbstrac
     @Test
     public void testSourceCheckoutOverUnrelatedSources() throws Exception
     {
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(gitRepository, new File(sourceRepositoriesBaseDetached, "5"));
 
         BuildContext buildContext = Mockito.mock(BuildContext.class);

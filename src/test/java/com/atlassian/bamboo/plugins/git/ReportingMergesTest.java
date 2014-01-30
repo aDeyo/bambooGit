@@ -1,5 +1,6 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.bamboo.agent.AgentType;
 import com.atlassian.bamboo.commit.CommitContext;
 import com.atlassian.bamboo.commit.CommitFile;
 import com.atlassian.bamboo.v2.build.BuildRepositoryChanges;
@@ -103,7 +104,7 @@ public class ReportingMergesTest extends GitAbstractTest
     {
         File localRepository = this.localRepository.get();
         // assert that file.txt is present in latest commit no matter hat the previous commit was
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(gitRepository, localRepository);
         for (String prevRevision : prevRevisions)
         {

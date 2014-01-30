@@ -1,5 +1,6 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.bamboo.agent.AgentType;
 import com.atlassian.bamboo.build.fileserver.BuildDirectoryManager;
 import com.atlassian.bamboo.repository.RepositoryException;
 import com.atlassian.bamboo.v2.build.agent.remote.RemoteBuildDirectoryManager;
@@ -35,7 +36,7 @@ public class RetrievingToDamagedSourceDirectoryTest extends GitAbstractTest
 
     public GitRepository createGitRepository(boolean simulateRemote) throws Exception
     {
-        GitRepository gitRepository = super.createGitRepository();
+        GitRepository gitRepository = super.createGitRepository(simulateRemote ? AgentType.REMOTE : AgentType.LOCAL);
         if (simulateRemote)
         {
             File workingDirectory = gitRepository.getWorkingDirectory();

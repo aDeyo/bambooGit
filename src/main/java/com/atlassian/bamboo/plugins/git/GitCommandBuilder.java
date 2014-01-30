@@ -197,13 +197,17 @@ public class GitCommandBuilder
     {
         if (StringUtils.isNotBlank(sshCommand))
         {
-            log.debug("GIT_SSH="+sshCommand);
             env.put("GIT_SSH", sshCommand);
         }
 
         if (System.getenv(SSH_ASKPASS_VARIABLE)==null && !env.containsKey(SSH_ASKPASS_VARIABLE))
         {
             env.put(SSH_ASKPASS_VARIABLE, COMMAND_WITH_EMPTY_OUTPUT.get());
+        }
+
+        if (log.isDebugEnabled())
+        {
+            log.debug(env);
         }
 
         return env;

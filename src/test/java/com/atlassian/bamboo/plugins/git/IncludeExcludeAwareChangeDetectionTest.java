@@ -1,5 +1,6 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.bamboo.agent.AgentType;
 import com.atlassian.bamboo.build.BuildLoggerManager;
 import com.atlassian.bamboo.build.logger.NullBuildLogger;
 import com.atlassian.bamboo.chains.BuildContextFactory;
@@ -98,7 +99,7 @@ public class IncludeExcludeAwareChangeDetectionTest extends GitAbstractTest
                 Mockito.mock(BranchCommitInformationManager.class),
                 Mockito.mock(BranchIntegrationService.class)
         );
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(gitRepository, localRepository);
         gitRepository.setFilterFilePatternOption(option);
         gitRepository.setFilterFilePatternRegex(pattern);

@@ -1,5 +1,6 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.bamboo.agent.AgentType;
 import com.atlassian.bamboo.plugins.git.testutils.ExtractComments;
 import com.atlassian.bamboo.v2.build.BuildContext;
 import com.atlassian.bamboo.v2.build.BuildRepositoryChanges;
@@ -66,7 +67,7 @@ public class WalkingRepositoryWithDetachedChangesetsTest extends GitAbstractTest
     public void testSubsequentChangeDetections(String previousChangeset, String srcRepo, String expectedHead, List<String> expectedComments) throws Exception
     {
         File source = new File(sourceRepositoriesBase, srcRepo);
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(gitRepository, source);
 
         BuildRepositoryChanges changes = gitRepository.collectChangesSinceLastBuild("GIT-PLAN", previousChangeset);
@@ -90,7 +91,7 @@ public class WalkingRepositoryWithDetachedChangesetsTest extends GitAbstractTest
         File workingDir = new File(sourceRepositoriesBase, "testSubsequentChangeDetectionsWithCache_WorkDir");
         FileUtils.forceMkdir(workingDir);
 
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         gitRepository.setWorkingDir(workingDir);
         setRepositoryProperties(gitRepository, singleSource);
 
@@ -111,7 +112,7 @@ public class WalkingRepositoryWithDetachedChangesetsTest extends GitAbstractTest
         File nextSrc = new File(sourceRepositoriesBase, "4");
         File singleSource = createTempDirectory();
 
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(gitRepository, singleSource);
 
         // feed the cache or the detached change won't be known
@@ -147,7 +148,7 @@ public class WalkingRepositoryWithDetachedChangesetsTest extends GitAbstractTest
     @Test(dataProvider = "crossSourceCheckoutData")
     public void testCrossSourceCheckout(String prevRepo, String newRepo) throws Exception
     {
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
 
         File prev = new File(sourceRepositoriesBase, prevRepo);
         setRepositoryProperties(gitRepository, prev);
@@ -183,7 +184,7 @@ public class WalkingRepositoryWithDetachedChangesetsTest extends GitAbstractTest
     @Test(dataProvider = "specificSourceCheckoutData")
     public void testSpecificSourceCheckout(String revision, String contents) throws Exception
     {
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
 
         File prev = new File(sourceRepositoriesBase, "5");
         setRepositoryProperties(gitRepository, prev);

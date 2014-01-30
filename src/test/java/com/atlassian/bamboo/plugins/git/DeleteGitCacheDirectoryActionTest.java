@@ -1,5 +1,6 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.bamboo.agent.AgentType;
 import com.atlassian.bamboo.chains.Chain;
 import com.atlassian.bamboo.plan.PlanManager;
 import com.atlassian.bamboo.repository.RepositoryDefinition;
@@ -22,7 +23,7 @@ public class DeleteGitCacheDirectoryActionTest extends GitAbstractTest
     @Test
     public void testDeletingNonexistentDirectory() throws Exception
     {
-        GitRepository repository = createGitRepository();
+        GitRepository repository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(repository, "repository.url", "");
 
         DeleteGitCacheDirectoryAction action = createDeleteAction(repository);
@@ -33,7 +34,7 @@ public class DeleteGitCacheDirectoryActionTest extends GitAbstractTest
     @Test
     public void testDeletingExistingDirectory() throws Exception
     {
-        GitRepository repository = createGitRepository();
+        GitRepository repository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(repository, "repository.url", "");
         File cache = repository.getCacheDirectory();
         cache.mkdirs();
@@ -52,7 +53,7 @@ public class DeleteGitCacheDirectoryActionTest extends GitAbstractTest
     @Test
     public void testIfCacheIsProperlyDeletedWhenRepositoryUrlContainsVariable() throws Exception
     {
-        GitRepository repository = createGitRepository();
+        GitRepository repository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(repository, "${bamboo.variable}");
 
         CustomVariableContext customVariableContext = new CustomVariableContextImpl();

@@ -52,13 +52,25 @@
     </dependency>
     <dependency>
       <groupId>com.atlassian.bamboo</groupId>
-      <artifactId>atlassian-bamboo-web</artifactId>
+      <artifactId>atlassian-bamboo-agent-core</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>1.4-backport-IO-168</version>
+      <groupId>com.atlassian.bamboo</groupId>
+      <artifactId>atlassian-bamboo-agent-remote</artifactId>
+      <version>${bamboo.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.atlassian.sal</groupId>
+      <artifactId>sal-api</artifactId>
+      <version>2.10.11</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.atlassian.bamboo</groupId>
+      <artifactId>atlassian-bamboo-web</artifactId>
+      <version>${bamboo.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -209,7 +221,7 @@
             </goals>
             <configuration>
               <includeScope>system</includeScope>
-              <outputDirectory>${build.outputDirectory}</outputDirectory>
+              <outputDirectory>${project.build.outputDirectory}</outputDirectory>
             </configuration>
           </execution>
         </executions>

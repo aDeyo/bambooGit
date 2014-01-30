@@ -1,8 +1,9 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.bamboo.agent.AgentType;
+import com.atlassian.bamboo.build.fileserver.BuildDirectoryManager;
 import com.atlassian.bamboo.repository.RepositoryException;
 import com.atlassian.bamboo.v2.build.BuildRepositoryChanges;
-import com.atlassian.bamboo.v2.build.agent.remote.RemoteBuildDirectoryManager;
 import com.google.common.collect.Iterables;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
@@ -165,7 +166,7 @@ public class ShallowClonesTest extends GitAbstractTest
     {
         for (String protocol : protocols)
         {
-            GitRepository gitRepository = createGitRepository();
+            GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
 
             for (String[] currentFetch : successiveFetches)
             {
@@ -190,9 +191,9 @@ public class ShallowClonesTest extends GitAbstractTest
     @Test(dataProvider = "testUseShallowClonesCheckboxData")
     public void testUseShallowClonesCheckbox(String repositoryUrl, String targetRevision, boolean shallow, int expectedChangesetCount) throws Exception
     {
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.REMOTE);
 
-        gitRepository.setBuildDirectoryManager(Mockito.mock(RemoteBuildDirectoryManager.class, new Returns(createTempDirectory())));
+        gitRepository.setBuildDirectoryManager(Mockito.mock(BuildDirectoryManager.class, new Returns(createTempDirectory())));
 
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("repository.git.useShallowClones", shallow);
@@ -279,7 +280,7 @@ public class ShallowClonesTest extends GitAbstractTest
     @Test
     public void testShallowCloneFromCacheDoesNotContainShallowInfo() throws Exception
     {
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(gitRepository, "git://github.com/pstefaniak/7.git", Collections.singletonMap("repository.git.useShallowClones", true));
 
         BuildRepositoryChanges buildChanges = gitRepository.collectChangesSinceLastBuild(PLAN_KEY.getKey(), null);

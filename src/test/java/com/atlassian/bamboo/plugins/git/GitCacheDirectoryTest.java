@@ -1,5 +1,6 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.bamboo.agent.AgentType;
 import com.atlassian.bamboo.plan.branch.VcsBranch;
 import com.atlassian.bamboo.plan.branch.VcsBranchImpl;
 import org.testng.Assert;
@@ -121,10 +122,10 @@ public class GitCacheDirectoryTest extends GitAbstractTest
 
     private void verifySecondThreadBlocks(String firstUrl, String secondUrl, boolean blockExpected) throws Exception
     {
-        final GitRepository repository1 = createGitRepository();
+        final GitRepository repository1 = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(repository1, firstUrl, "");
 
-        final GitRepository repository2 = createGitRepository();
+        final GitRepository repository2 = createGitRepository(AgentType.LOCAL);
         repository2.setWorkingDir(repository1.getWorkingDirectory());
         setRepositoryProperties(repository2, secondUrl, "");
 

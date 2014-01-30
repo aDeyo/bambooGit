@@ -1,5 +1,6 @@
 package com.atlassian.bamboo.plugins.git;
 
+import com.atlassian.bamboo.agent.AgentType;
 import com.atlassian.bamboo.build.fileserver.BuildDirectoryManager;
 import com.atlassian.bamboo.commit.CommitContext;
 import com.atlassian.bamboo.credentials.CredentialsAccessor;
@@ -40,7 +41,7 @@ public class GitRepositoryTest extends GitAbstractTest
     @Test
     public void testBasicFunctionality() throws Exception
     {
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(gitRepository, "git://github.com/cixot/test.git", "master");
 
         BuildRepositoryChanges changes = gitRepository.collectChangesSinceLastBuild(PLAN_KEY.getKey(), null);
@@ -55,7 +56,7 @@ public class GitRepositoryTest extends GitAbstractTest
         final File testRepository = createTempDirectory();
         ZipResourceDirectory.copyZipResourceToDirectory("basic-repository.zip", testRepository);
         final String commitOnlyOnMyBranch = "cb05712da0a59040b8eb867f48b84fad292974bf";
-        final GitRepository gitRepository = createGitRepository();
+        final GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryPropertiesWithFetchAll(gitRepository, testRepository, "master");
 
         gitRepository.retrieveSourceCode(mockBuildContext(), commitOnlyOnMyBranch, getCheckoutDir(gitRepository));
@@ -64,7 +65,7 @@ public class GitRepositoryTest extends GitAbstractTest
     @Test
     public void testNetworkErrorsDontRemoveCache() throws Exception
     {
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(gitRepository, "git://localhost:3200/cixot/test.git", "master");
 
         final File cacheDirectory = gitRepository.getCacheDirectory();
@@ -105,7 +106,7 @@ public class GitRepositoryTest extends GitAbstractTest
         File testRepository = createTempDirectory();
         ZipResourceDirectory.copyZipResourceToDirectory("basic-repository.zip", testRepository);
 
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(gitRepository, testRepository, branch);
 
         gitRepository.retrieveSourceCode(mockBuildContext(), targetRevision, getCheckoutDir(gitRepository));
@@ -118,7 +119,7 @@ public class GitRepositoryTest extends GitAbstractTest
         File testRepository = createTempDirectory();
         ZipResourceDirectory.copyZipResourceToDirectory("basic-repository.zip", testRepository);
 
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.REMOTE);
         File workingDirectory = gitRepository.getWorkingDirectory();
         BuildDirectoryManager buildDirectoryManager = new RemoteBuildDirectoryManager();
         gitRepository.setBuildDirectoryManager(buildDirectoryManager);
@@ -144,7 +145,7 @@ public class GitRepositoryTest extends GitAbstractTest
     @Test(dataProvider = "testSshConnectionToGitHubData")
     public void testSshConnectionToGitHub(String repositoryUrl, String sshKeyfile, String sshPassphrase) throws Exception
     {
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         String sshKey = FileUtils.readFileToString(new File(Thread.currentThread().getContextClassLoader().getResource(sshKeyfile).toURI()));
         setRepositoryProperties(gitRepository, repositoryUrl, "master", sshKey, sshPassphrase);
 
@@ -155,7 +156,7 @@ public class GitRepositoryTest extends GitAbstractTest
     @Test
     public void testAuthenticationTypesHaveValidLabels() throws Exception
     {
-        final GitRepository gitRepository = createGitRepository();
+        final GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         final CredentialsAccessor credentialsAccessor = mock(CredentialsAccessor.class);
         when(credentialsAccessor.getAllCredentials()).thenReturn(Collections.emptyList());
         gitRepository.setCredentialsAccessor(credentialsAccessor);
@@ -204,7 +205,7 @@ public class GitRepositoryTest extends GitAbstractTest
         File tmp = createTempDirectory();
         ZipResourceDirectory.copyZipResourceToDirectory("150changes.zip", tmp);
 
-        GitRepository repository = createGitRepository();
+        GitRepository repository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(repository, tmp);
 
         BuildRepositoryChanges buildChanges = repository.collectChangesSinceLastBuild(PLAN_KEY.getKey(), "1fea1bc1ff3a0a2a2ad5b15dc088323b906e81d7");
@@ -224,7 +225,7 @@ public class GitRepositoryTest extends GitAbstractTest
         File testRepository = createTempDirectory();
         ZipResourceDirectory.copyZipResourceToDirectory("basic-repository.zip", testRepository);
 
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(gitRepository, testRepository, "master");
 
         BuildRepositoryChanges changes = gitRepository.collectChangesSinceLastBuild(PLAN_KEY.getKey(), null);
@@ -238,7 +239,7 @@ public class GitRepositoryTest extends GitAbstractTest
         ZipResourceDirectory.copyZipResourceToDirectory("basic-repository.zip", testRepository);
         int commitsBeforePushCount = createJGitOperationHelper(null).extractCommits(testRepository, null, "HEAD").getChanges().size();
 
-        GitRepository gitRepository = createGitRepository();
+        GitRepository gitRepository = createGitRepository(AgentType.LOCAL);
         setRepositoryProperties(gitRepository, testRepository, "master");
 
         BuildRepositoryChanges buildChanges = gitRepository.collectChangesSinceLastBuild(PLAN_KEY.getKey(), null);

@@ -1,6 +1,7 @@
 package com.atlassian.bamboo.plugins.git;
 
 import com.atlassian.bamboo.FeatureManager;
+import com.atlassian.bamboo.agent.AgentType;
 import com.atlassian.bamboo.build.BuildLoggerManager;
 import com.atlassian.bamboo.build.context.BuildContextBuilderImpl;
 import com.atlassian.bamboo.build.fileserver.BuildDirectoryManager;
@@ -160,9 +161,9 @@ public class GitAbstractTest
         return _createGitRepository(new NativeGitRepositoryFixture());
     }
 
-    public GitRepository createGitRepository() throws Exception
+    public GitRepository createGitRepository(final AgentType agentType) throws Exception
     {
-        return _createGitRepository(new GitRepositoryFixture());
+        return _createGitRepository(new GitRepositoryFixture(agentType));
     }
 
     public GitRepository _createGitRepository(GitRepository fixture) throws Exception
@@ -313,6 +314,13 @@ public class GitAbstractTest
 
     static class GitRepositoryFixture extends GitRepository
     {
+        private final AgentType agentType;
+
+        GitRepositoryFixture(final AgentType agentType)
+        {
+            this.agentType = agentType;
+        }
+
         @Override
         public String getGitCapability()
         {
@@ -324,10 +332,21 @@ public class GitAbstractTest
         {
             return GitCacheDirectory.getCacheDirectory(getWorkingDirectory(), getSubstitutedAccessData());
         }
+
+        @Override
+        protected boolean isOnLocalAgent()
+        {
+            return agentType==AgentType.LOCAL;
+        }
     }
 
     static class NativeGitRepositoryFixture extends GitRepositoryFixture
     {
+        NativeGitRepositoryFixture()
+        {
+            super(AgentType.LOCAL);
+        }
+
         @Override
         public String getGitCapability()
         {
