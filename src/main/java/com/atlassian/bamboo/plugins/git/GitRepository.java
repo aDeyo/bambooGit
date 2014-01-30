@@ -108,24 +108,23 @@ public class GitRepository
 
     private static final String REPOSITORY_GIT_NAME = "repository.git.name";
     private static final String REPOSITORY_URL = "repositoryUrl";
-    private static final String REPOSITORY_GIT_REPOSITORY_URL = "repository.git." + REPOSITORY_URL;
-    @VisibleForTesting
-    static final String REPOSITORY_GIT_AUTHENTICATION_TYPE = "repository.git.authenticationType";
+    public static final String REPOSITORY_GIT_REPOSITORY_URL = "repository.git." + REPOSITORY_URL;
+    public static final String REPOSITORY_GIT_AUTHENTICATION_TYPE = "repository.git.authenticationType";
     private static final String REPOSITORY_USERNAME = "username";
-    private static final String REPOSITORY_GIT_USERNAME = "repository.git." + REPOSITORY_USERNAME;
-    private static final String REPOSITORY_GIT_PASSWORD = "repository.git.password";
+    public static final String REPOSITORY_GIT_USERNAME = "repository.git." + REPOSITORY_USERNAME;
+    public static final String REPOSITORY_GIT_PASSWORD = "repository.git.password";
     private static final String REPOSITORY_BRANCH = "branch";
-    private static final String REPOSITORY_GIT_BRANCH = "repository.git." + REPOSITORY_BRANCH;
-    private static final String REPOSITORY_GIT_SSH_KEY = "repository.git.ssh.key";
-    private static final String REPOSITORY_GIT_SSH_PASSPHRASE = "repository.git.ssh.passphrase";
-    private static final String REPOSITORY_GIT_USE_SHALLOW_CLONES = "repository.git.useShallowClones";
-    private static final String REPOSITORY_GIT_USE_REMOTE_AGENT_CACHE = "repository.git.useRemoteAgentCache";
-    private static final String REPOSITORY_GIT_USE_SUBMODULES = "repository.git.useSubmodules";
-    private static final String REPOSITORY_GIT_MAVEN_PATH = "repository.git.maven.path";
-    private static final String REPOSITORY_GIT_COMMAND_TIMEOUT = "repository.git.commandTimeout";
-    private static final String REPOSITORY_GIT_VERBOSE_LOGS = "repository.git.verbose.logs";
-    @VisibleForTesting
-    static final String REPOSITORY_GIT_FETCH_WHOLE_REPOSITORY = "repository.git.fetch.whole.repository";
+    public static final String REPOSITORY_GIT_BRANCH = "repository.git." + REPOSITORY_BRANCH;
+    public static final String REPOSITORY_GIT_SSH_KEY = "repository.git.ssh.key";
+    public static final String REPOSITORY_GIT_SSH_PASSPHRASE = "repository.git.ssh.passphrase";
+
+    public static final String REPOSITORY_GIT_USE_SHALLOW_CLONES = "repository.git.useShallowClones";
+    public static final String REPOSITORY_GIT_USE_REMOTE_AGENT_CACHE = "repository.git.useRemoteAgentCache";
+    public static final String REPOSITORY_GIT_USE_SUBMODULES = "repository.git.useSubmodules";
+    public static final String REPOSITORY_GIT_MAVEN_PATH = "repository.git.maven.path";
+    public static final String REPOSITORY_GIT_COMMAND_TIMEOUT = "repository.git.commandTimeout";
+    public static final String REPOSITORY_GIT_VERBOSE_LOGS = "repository.git.verbose.logs";
+    public static final String REPOSITORY_GIT_FETCH_WHOLE_REPOSITORY = "repository.git.fetch.whole.repository";
     private static final String REPOSITORY_GIT_SHAREDCREDENTIALS_ID = "repository.git.sharedCrendentials";
     private static final String REPOSITORY_GIT_SHAREDCREDENTIALS_DELETED = "repository.git.sharedCredentials.deleted";
     private static final String TEMPORARY_GIT_PASSWORD = "temporary.git.password";

@@ -42,6 +42,11 @@
     </dependency>
     <dependency>
       <groupId>com.atlassian.bamboo</groupId>
+      <artifactId>atlassian-bamboo-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.atlassian.bamboo</groupId>
       <artifactId>atlassian-bamboo-core</artifactId>
       <scope>provided</scope>
     </dependency>
