@@ -14,6 +14,16 @@
     <name>Atlassian</name>
     <url>http://www.atlassian.com/</url>
   </organization>
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+    <license>
+      <name>Eclipse Distribution License - v 1.0</name>
+      <url>http://www.eclipse.org/org/documents/edl-v10.php</url>
+    </license>
+  </licenses>
 
   <scm>
     <connection>scm:git:git://bitbucket.org/atlassian/bamboo-git-plugin.git</connection>
