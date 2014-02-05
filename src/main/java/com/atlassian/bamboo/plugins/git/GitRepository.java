@@ -234,8 +234,11 @@ public class GitRepository
             VcsBranch overriddenBranch = null;
             if (customRevision != null)
             {
+                helper.fetch(cacheDirectory, customRevision, false);
+
                 final String vcsBranchName = substitutedAccessData.getVcsBranch().getName();
                 final String branchForSha = helper.getBranchForSha(cacheDirectory, customRevision, vcsBranchName);
+
                 if (!StringUtils.equals(branchForSha, vcsBranchName))
                 {
                     overriddenBranch = new VcsBranchImpl(branchForSha);
