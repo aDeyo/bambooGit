@@ -3,15 +3,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-
-  <parent>
-    <groupId>com.atlassian.bamboo</groupId>
-    <artifactId>atlassian-bamboo-plugins2-parent</artifactId>
-    <version>5.5-SNAPSHOT</version>
-  </parent>
-
   <groupId>com.atlassian.bamboo.plugins</groupId>
   <artifactId>atlassian-bamboo-plugin-git</artifactId>
+  <version>3.0.38-SNAPSHOT</version>
   <packaging>atlassian-plugin</packaging>
 
   <name>Atlassian Bamboo Git Repository Plugin</name>
@@ -20,7 +14,6 @@
     <name>Atlassian</name>
     <url>http://www.atlassian.com/</url>
   </organization>
-  
   <licenses>
     <license>
       <name>The Apache Software License, Version 2.0</name>
@@ -37,31 +30,39 @@
     <developerConnection>scm:git:ssh://git@bitbucket.org/atlassian/bamboo-git-plugin.git</developerConnection>
   </scm>
 
+  <properties>
+    <bamboo.version>5.5-SNAPSHOT</bamboo.version>
+    <bamboo.data.version>3.2.2</bamboo.data.version>
+
+    <!-- after upgrading atlassian.rest.version do not forget to update jackson.version and jersey.version with values from com.atlassian.plugins.rest:atlassian-rest-parent -->
+    <atlassian.rest.version>2.6.3.1</atlassian.rest.version>
+    <atlassian.rest.jackson.version>1.9.1</atlassian.rest.jackson.version>
+    <atlassian.rest.jersey.version>1.8-atlassian-6</atlassian.rest.jersey.version>
+
+    <amps.version>4.1</amps.version>
+
+    <jdkLevel>1.6</jdkLevel>
+  </properties>
+
+
   <dependencies>
     <!-- Bamboo dependencies -->
     <dependency>
       <groupId>com.atlassian.bamboo</groupId>
-      <artifactId>atlassian-bamboo-agent-core</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.atlassian.bamboo</groupId>
-      <artifactId>atlassian-bamboo-agent-remote</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.atlassian.bamboo</groupId>
-      <artifactId>atlassian-bamboo-api</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.atlassian.bamboo</groupId>
       <artifactId>atlassian-bamboo-core</artifactId>
+      <version>${bamboo.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.atlassian.bamboo</groupId>
+      <artifactId>atlassian-bamboo-agent-core</artifactId>
+      <version>${bamboo.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.atlassian.bamboo</groupId>
       <artifactId>atlassian-bamboo-web</artifactId>
+      <version>${bamboo.version}</version>
       <scope>provided</scope>
     </dependency>
 
@@ -83,16 +84,19 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
+      <version>10.0.1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
+      <version>2.5</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
+      <version>1.2.15</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
@@ -120,12 +124,20 @@
     <!-- test dependencies -->
     <dependency>
       <groupId>com.atlassian.bamboo</groupId>
+      <artifactId>atlassian-bamboo-agent-remote</artifactId>
+      <version>${bamboo.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.atlassian.bamboo</groupId>
       <artifactId>atlassian-bamboo-test-utils</artifactId>
+      <version>${bamboo.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.atlassian.bamboo.plugins</groupId>
       <artifactId>atlassian-bamboo-plugin-ssh</artifactId>
+      <version>${bamboo.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -203,8 +215,9 @@
         <version>${amps.version}</version>
         <extensions>true</extensions>
         <configuration>
-          <productVersion>${atlassian.product.version}</productVersion>
-          <productDataVersion>${atlassian.product.data.version}</productDataVersion>
+          <productVersion>${bamboo.version}</productVersion>
+          <productDataVersion>${bamboo.data.version}</productDataVersion>
+          <extractDependencies>false</extractDependencies>
           <systemPropertyVariables>
             <xvfb.enable>${xvfb.enable}</xvfb.enable>
           </systemPropertyVariables>
