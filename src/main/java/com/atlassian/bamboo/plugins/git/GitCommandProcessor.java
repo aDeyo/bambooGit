@@ -595,7 +595,7 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
 
     static class LineOutputHandlerImpl extends LineOutputHandler implements GitOutputHandler
     {
-        private final List<String> lines = Lists.newLinkedList();
+        private final List<String> lines = Collections.synchronizedList(Lists.<String>newLinkedList());
 
         @Override
         protected void processLine(int i, String s)
@@ -619,29 +619,29 @@ class GitCommandProcessor implements Serializable, ProxyErrorReceiver
     static class LoggingOutputHandler extends LineOutputHandler implements GitCommandProcessor.GitOutputHandler
     {
         final BuildLogger buildLogger;
-        final StringBuilder stringBuilder;
+        final StringBuffer stringBuffer;
 
         public LoggingOutputHandler(@NotNull final BuildLogger buildLogger)
         {
             this.buildLogger = buildLogger;
-            stringBuilder = new StringBuilder();
+            stringBuffer = new StringBuffer();
         }
 
         @Override
         protected void processLine(int i, String s)
         {
             buildLogger.addBuildLogEntry(s);
-            if (stringBuilder.length()!=0)
+            if (stringBuffer.length()!=0)
             {
-                stringBuilder.append("\n");
+                stringBuffer.append("\n");
             }
-            stringBuilder.append(s);
+            stringBuffer.append(s);
         }
 
         @Override
         public String getStdout()
         {
-            return stringBuilder.toString();
+            return stringBuffer.toString();
         }
     }
 
