@@ -218,9 +218,6 @@
           <productVersion>${bamboo.version}</productVersion>
           <productDataVersion>${bamboo.data.version}</productDataVersion>
           <extractDependencies>false</extractDependencies>
-          <systemPropertyVariables>
-            <xvfb.enable>${xvfb.enable}</xvfb.enable>
-          </systemPropertyVariables>
         </configuration>
       </plugin>
       <plugin>
