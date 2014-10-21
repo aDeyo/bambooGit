@@ -410,7 +410,7 @@ public class GitHubRepository extends AbstractStandaloneRepository implements Cu
         this.accessData = gitHubAccessData;
 
         getGitRepository().setAccessData(GitRepositoryAccessData.builder(getGitRepository().getAccessData())
-                                            .repositoryUrl("https://github.com/" + gitHubAccessData.getRepository() + ".git")
+                                            .repositoryUrl("https://github.dominionenterprises.com/" + gitHubAccessData.getRepository() + ".git")
                                             .username(gitHubAccessData.getUsername())
                                             .password(gitHubAccessData.getPassword())
                                             .branch(gitHubAccessData.getVcsBranch())

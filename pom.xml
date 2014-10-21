@@ -11,7 +11,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.atlassian.bamboo.plugins</groupId>
   <artifactId>atlassian-bamboo-plugin-git</artifactId>
-  <version>5.5-SNAPSHOT</version>
+  <version>5.5</version>
   <packaging>atlassian-plugin</packaging>
 
   <name>Atlassian Bamboo Git Repository Plugin</name>
